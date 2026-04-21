@@ -156,7 +156,7 @@ def top_exit_velocity(hrs, top_n=10):
 def top_distance(hrs, top_n=10):
     """Top N HRs by distance — batters only (excludes pitchers batting)."""
     cols = ["batter_name", "batting_team", "launch_speed", "hit_distance_sc",
-            "launch_angle", "game_date"]
+            "launch_angle", "game_date", "hc_x", "hc_y"]
     sub = hrs.dropna(subset=["hit_distance_sc"])[cols].copy()
     sub = sub.sort_values("hit_distance_sc", ascending=False).head(top_n).reset_index(drop=True)
     sub.rename(columns={
@@ -573,10 +573,18 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <button id="dist-btn-season" onclick="switchDist('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season</button>
         </div>
       </div>
-      <div style="margin-bottom:1.25rem;">
-        <canvas id="spray-chart" width="480" height="380" style="width:100%;max-width:480px;display:block;"></canvas>
-      </div>
       <div class="hr-cards" id="dist-cards"></div>
+    </div>
+  </div>
+
+  <!-- SPRAY CHART — full width below EV/Distance cards -->
+  <div class="section" style="border-top:1px solid var(--border);padding-top:2.5rem;">
+    <div class="section-header">
+      <div class="section-title">Landing Spot Map</div>
+      <div class="section-badge" id="spray-badge">Longest HRs — Last 7 Days</div>
+    </div>
+    <div style="display:flex;justify-content:center;">
+      <canvas id="spray-chart" width="700" height="540" style="width:100%;max-width:700px;display:block;"></canvas>
     </div>
   </div>
 
@@ -692,6 +700,7 @@ function switchDist(mode) {
   drawSpray(rows);
   document.getElementById('dist-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
   document.getElementById('dist-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
+  document.getElementById('spray-badge').textContent = mode === 'week' ? 'Longest HRs — Last 7 Days' : 'Longest HRs — Season';
 }
 
 /* ── SPRAY CHART ── */
@@ -702,98 +711,153 @@ function drawSpray(rows) {
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  // Field dimensions: home plate at bottom-center
-  const HX = W / 2, HY = H - 30;
-  const SCALE = 0.72; // px per foot at 400ft baseline
+  // Statcast hc_x/hc_y origin is home plate at (125.42, 199.46) in a 250x250 SVG space
+  // We map that coordinate space onto our canvas
+  // hc_x: 0=left foul line, 250=right foul line; hc_y: 0=CF wall, 250=home plate area
+  const SC_HOME_X = 125.42, SC_HOME_Y = 199.46;
+  const SC_W = 250, SC_H = 250;
+  const PAD = 20;
+  const scaleX = (W - PAD * 2) / SC_W;
+  const scaleY = (H - PAD * 2) / SC_H;
+  const scale  = Math.min(scaleX, scaleY);
 
-  // Draw field grass
+  // Canvas coords for home plate
+  const HX = PAD + SC_HOME_X * scale;
+  const HY = PAD + SC_HOME_Y * scale;
+
+  function toCanvas(hcx, hcy) {
+    return [PAD + hcx * scale, PAD + hcy * scale];
+  }
+
+  // ── FIELD BACKGROUND ──
+  // Outfield grass wedge
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(HX, HY);
-  ctx.lineTo(HX - 200, HY - 200);
-  ctx.quadraticCurveTo(HX, HY - 380, HX + 200, HY - 200);
+  // foul lines extend to corners roughly at hc_x=0,hcy=90 and hc_x=250,hcy=90
+  const [flLx, flLy] = toCanvas(0,   90);
+  const [flRx, flRy] = toCanvas(250, 90);
+  const [cfX,  cfY]  = toCanvas(SC_HOME_X, 0);
+  ctx.lineTo(flLx, flLy);
+  ctx.quadraticCurveTo(cfX, cfY, flRx, flRy);
   ctx.closePath();
-  ctx.fillStyle = 'rgba(13,45,20,0.7)';
+  ctx.fillStyle = 'rgba(10,40,18,0.85)';
   ctx.fill();
   ctx.restore();
 
-  // Foul lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  // Infield dirt square (bases at ~90ft = ~36px in SC space)
+  const BASE = 34;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(HX,          HY);
+  ctx.lineTo(HX - BASE,   HY - BASE);
+  ctx.lineTo(HX,          HY - BASE * 2);
+  ctx.lineTo(HX + BASE,   HY - BASE);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(160,110,60,0.18)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(180,130,80,0.25)';
   ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  // Pitcher's mound
+  ctx.beginPath();
+  ctx.arc(HX, HY - BASE, 6, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(160,110,60,0.2)';
+  ctx.fill();
+
+  // Foul lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(HX, HY);
-  ctx.lineTo(HX - 200, HY - 200);
+  ctx.lineTo(flLx, flLy);
   ctx.moveTo(HX, HY);
-  ctx.lineTo(HX + 200, HY - 200);
+  ctx.lineTo(flRx, flRy);
   ctx.stroke();
+  ctx.setLineDash([]);
 
-  // Distance arcs (330, 380, 430ft)
-  [330, 380, 430].forEach(ft => {
-    const r = ft * SCALE;
+  // Distance arc labels (300, 380, 420ft) — scale: 1 SC unit ≈ 2.5ft
+  const FT_PER_SC = 2.5;
+  [300, 380, 420].forEach(ft => {
+    const r = (ft / FT_PER_SC) * scale;
     ctx.beginPath();
     ctx.arc(HX, HY, r, -Math.PI * 0.85, -Math.PI * 0.15);
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    const labelAngle = -Math.PI * 0.18;
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
     ctx.font = '9px IBM Plex Mono, monospace';
-    ctx.fillText(ft + 'ft', HX + r * 0.68 + 4, HY - r * 0.72);
+    ctx.fillText(ft + 'ft', HX + Math.cos(labelAngle) * r + 3, HY + Math.sin(labelAngle) * r - 3);
   });
 
-  // Infield dirt circle
+  // Home plate
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.beginPath();
-  ctx.arc(HX, HY - 90 * SCALE, 95 * SCALE * 0.5, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(180,130,80,0.2)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  ctx.moveTo(HX,     HY - 5);
+  ctx.lineTo(HX + 5, HY);
+  ctx.lineTo(HX + 5, HY + 4);
+  ctx.lineTo(HX - 5, HY + 4);
+  ctx.lineTo(HX - 5, HY);
+  ctx.closePath();
+  ctx.fill();
 
-  // Home plate marker
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillRect(HX - 3, HY - 3, 6, 6);
-
-  // Color ramp by rank (gold → blue)
-  const colors = ['#F5A623','#E8922A','#DA8030','#CC6E36','#BE5C3C',
-                  '#B04A42','#A23848','#94264E','#861454','#78025A'];
-
-  // Plot each HR
-  const maxDist = Math.max(...rows.map(r => +r.distance || 0));
+  // ── PLOT HRs using real hc_x / hc_y ──
+  const colors = ['#F5A623','#F0B040','#E8C060','#2C7BE5','#5B9CF0',
+                  '#88B8F8','#D0021B','#E84444','#F07070','#F5A0A0'];
 
   rows.forEach((row, i) => {
-    const dist = +row.distance || 0;
-    if (!dist) return;
-    // Use launch angle as spray angle — map 0° (center) ± to left/right
-    // Statcast spray_angle not available so estimate from hit_direction
-    // Use rank index to spread evenly across ~160° arc if no angle data
-    const totalRows = rows.length;
-    const spreadDeg = -80 + (i / Math.max(totalRows - 1, 1)) * 160; // -80° to +80°
-    const rad = (spreadDeg - 90) * Math.PI / 180; // rotate so 0° = center field
-    const px = dist * SCALE;
-    const x = HX + Math.cos(rad) * px;
-    const y = HY + Math.sin(rad) * px;
+    const hcx = +row.hc_x;
+    const hcy = +row.hc_y;
+    if (!hcx || !hcy || isNaN(hcx) || isNaN(hcy)) return;
 
-    // Arc from home plate to landing
+    const [lx, ly] = toCanvas(hcx, hcy);
+
+    // Dashed arc from home plate to landing
+    const cpx = (HX + lx) / 2;
+    const cpy = (HY + ly) / 2 - 35;
     ctx.beginPath();
     ctx.moveTo(HX, HY);
-    const cpx = (HX + x) / 2 + Math.sin(rad) * 30;
-    const cpy = (HY + y) / 2 - Math.abs(Math.cos(rad)) * 40;
-    ctx.quadraticCurveTo(cpx, cpy, x, y);
-    ctx.strokeStyle = colors[i] || '#888';
+    ctx.quadraticCurveTo(cpx, cpy, lx, ly);
+    ctx.strokeStyle = colors[i] || '#aaa';
     ctx.lineWidth = 1.5;
     ctx.setLineDash([3, 3]);
+    ctx.globalAlpha = 0.6;
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
 
-    // Landing dot
+    // Landing dot with glow ring
     ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = colors[i] || '#888';
+    ctx.arc(lx, ly, 9, 0, Math.PI * 2);
+    ctx.fillStyle = (colors[i] || '#aaa') + '33';
     ctx.fill();
 
-    // Rank label
+    ctx.beginPath();
+    ctx.arc(lx, ly, 6, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i] || '#aaa';
+    ctx.fill();
+
+    // Rank number
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 7px IBM Plex Mono, monospace';
+    ctx.font = 'bold 8px IBM Plex Mono, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(i + 1, x, y + 3);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(i + 1, lx, ly);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // Name label offset slightly from dot
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = '9px IBM Plex Mono, monospace';
+    const name = (row.player_name || '').split(' ').pop();
+    const dist = row.distance !== '—' ? row.distance + 'ft' : '';
+    const offsetX = hcx > SC_HOME_X ? 10 : -10;
+    ctx.textAlign = hcx > SC_HOME_X ? 'left' : 'right';
+    ctx.fillText(name + (dist ? ' ' + dist : ''), lx + offsetX, ly - 8);
     ctx.textAlign = 'left';
   });
 }
