@@ -70,6 +70,9 @@ def fetch_home_runs(start, end):
         hrs["batter_name"] = hrs["des"].str.extract(r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))")[0].str.strip()
     else:
         hrs["batter_name"] = hrs["player_name"]  # fallback
+    hrs["batting_team"] = hrs.apply(
+        lambda r: r["home_team"] if r["inning_topbot"] == "Bot" else r["away_team"], axis=1
+    )
     print(f"  Found {len(hrs)} regular season home runs")
     return hrs
 
@@ -77,12 +80,12 @@ def fetch_home_runs(start, end):
 # ─── AGGREGATIONS ─────────────────────────────────────────────────────────────
 
 def team_weekly(hrs):
-    """Home runs by team for the selected window."""
+    """Home runs by batting team for the selected window."""
     tbl = (
-        hrs.groupby("home_team")["events"]
+        hrs.groupby("batting_team")["events"]
         .count()
         .reset_index()
-        .rename(columns={"home_team": "team", "events": "hr_week"})
+        .rename(columns={"batting_team": "team", "events": "hr_week"})
         .sort_values("hr_week", ascending=False)
     )
     return tbl
@@ -98,11 +101,14 @@ def team_season(start, end):
         (df["events"] == "home_run") &
         (df["game_type"] == "R")
     ].copy()
+    hrs["batting_team"] = hrs.apply(
+        lambda r: r["home_team"] if r["inning_topbot"] == "Bot" else r["away_team"], axis=1
+    )
     tbl = (
-        hrs.groupby("home_team")["events"]
+        hrs.groupby("batting_team")["events"]
         .count()
         .reset_index()
-        .rename(columns={"home_team": "team", "events": "hr_season"})
+        .rename(columns={"batting_team": "team", "events": "hr_season"})
         .sort_values("hr_season", ascending=False)
     )
     return tbl
@@ -119,7 +125,7 @@ def player_leaderboard(hrs, top_n=10):
         hrs.groupby("batter_name")
         .agg(
             hr_week=("events", "count"),
-            team=("home_team", lambda x: x.mode()[0]),
+            team=("batting_team", lambda x: x.mode()[0]),
         )
         .reset_index()
         .rename(columns={"batter_name": "player_name"})
@@ -132,13 +138,13 @@ def player_leaderboard(hrs, top_n=10):
 def top_exit_velocity(hrs, top_n=10):
     """Top N HRs by exit velocity — batters only (excludes pitchers batting)."""
     # pitcher_1 is the pitching team pitcher; batter != pitcher_1 ensures we have a position player
-    cols = ["batter_name", "home_team", "launch_speed", "hit_distance_sc",
+    cols = ["batter_name", "batting_team", "launch_speed", "hit_distance_sc",
             "launch_angle", "game_date", "home_score", "away_score"]
     sub = hrs.dropna(subset=["launch_speed"])[cols].copy()
     sub = sub.sort_values("launch_speed", ascending=False).head(top_n).reset_index(drop=True)
     sub.rename(columns={
         "batter_name": "player_name",
-        "home_team": "team",
+        "batting_team": "team",
         "launch_speed": "exit_velo",
         "hit_distance_sc": "distance",
         "launch_angle": "angle",
@@ -149,13 +155,13 @@ def top_exit_velocity(hrs, top_n=10):
 
 def top_distance(hrs, top_n=10):
     """Top N HRs by distance — batters only (excludes pitchers batting)."""
-    cols = ["batter_name", "home_team", "launch_speed", "hit_distance_sc",
+    cols = ["batter_name", "batting_team", "launch_speed", "hit_distance_sc",
             "launch_angle", "game_date"]
     sub = hrs.dropna(subset=["hit_distance_sc"])[cols].copy()
     sub = sub.sort_values("hit_distance_sc", ascending=False).head(top_n).reset_index(drop=True)
     sub.rename(columns={
         "batter_name": "player_name",
-        "home_team": "team",
+        "batting_team": "team",
         "launch_speed": "exit_velo",
         "hit_distance_sc": "distance",
         "launch_angle": "angle",
