@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLB Home Run Tracker — 2026-04-13 → 2026-04-19</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:     #D0021B;
+    --red-dk:  #9B0014;
+    --navy:    #0D1B2A;
+    --navy2:   #162232;
+    --navy3:   #1E2F42;
+    --slate:   #2A3F55;
+    --muted:   #8AA0B5;
+    --border:  rgba(138,160,181,0.18);
+    --gold:    #F5A623;
+    --text:    #E8EEF4;
+    --text2:   #A8BECE;
+    --mono:    'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--navy2);
+    border-bottom: 3px solid var(--red);
+    padding: 2.5rem 2rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 22px,
+      rgba(208,2,27,0.04) 22px,
+      rgba(208,2,27,0.04) 44px
+    );
+    pointer-events: none;
+  }
+  .hero-inner { position: relative; max-width: 1100px; margin: 0 auto; }
+  .hero-eyebrow {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .hero-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: 1px;
+    color: #fff;
+  }
+  .hero-title span { color: var(--red); }
+  .hero-meta {
+    margin-top: 0.75rem;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    background: var(--navy3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1.25rem;
+    min-width: 130px;
+  }
+  .stat-pill-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .stat-pill-val {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1;
+  }
+  .stat-pill-val.red { color: var(--red); }
+  .stat-pill-val.gold { color: var(--gold); }
+
+  /* ── LAYOUT ── */
+  .content { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 3.5rem; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: #fff;
+  }
+  .section-badge {
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-family: var(--mono);
+  }
+
+  /* ── TABLES ── */
+  .tbl-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    background: var(--navy3);
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 400;
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+  thead th.num { text-align: right; }
+  tbody tr { border-top: 1px solid var(--border); }
+  tbody tr:nth-child(odd) { background: rgba(255,255,255,0.018); }
+  tbody tr:hover { background: rgba(255,255,255,0.04); }
+  tbody td {
+    padding: 10px 14px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tbody td.num {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  tbody td.rank {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    width: 32px;
+  }
+
+  /* ── BAR CELLS ── */
+  .bar-cell { display: flex; align-items: center; gap: 10px; }
+  .bar-bg {
+    flex: 1;
+    height: 6px;
+    background: var(--navy3);
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 60px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--red);
+    transition: width 0.4s ease;
+  }
+  .bar-fill.blue { background: #2C7BE5; }
+  .bar-fill.gold { background: var(--gold); }
+  .bar-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    min-width: 30px;
+    text-align: right;
+    color: #fff;
+  }
+
+  /* ── GRID ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── TOP HR CARDS ── */
+  .hr-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+  .hr-card {
+    background: var(--navy2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hr-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--red);
+  }
+  .hr-card.gold-card::after { background: var(--gold); }
+  .hr-card-rank {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .hr-card-player {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 2px;
+    line-height: 1.2;
+  }
+  .hr-card-team {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 10px;
+  }
+  .hr-card-stats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .hr-card-stat { }
+  .hr-card-stat-label {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .hr-card-stat-val {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #fff;
+  }
+  .hr-card-stat-val.accent { color: var(--gold); }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">MLB Statcast Weekly Digest</div>
+    <h1 class="hero-title">Home Run <span>Tracker</span></h1>
+    <div class="hero-meta">2026-04-13 → 2026-04-19 &nbsp;·&nbsp; Generated Apr 20, 2026 22:26</div>
+    <div class="stats-row">
+      <div class="stat-pill">
+        <div class="stat-pill-label">HRs Last 7 Days</div>
+        <div class="stat-pill-val red">219</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Season Total</div>
+        <div class="stat-pill-val">665</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Top Exit Velo</div>
+        <div class="stat-pill-val gold">116.2 mph</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Longest HR</div>
+        <div class="stat-pill-val gold">467 ft</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- TEAM TABLE -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Home Runs by Team</div>
+      <div class="section-badge">Last 7 Days + Season</div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="team-table">
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th class="num" style="min-width:100px">Last 7 Days</th>
+            <th style="min-width:160px">7-Day Bar</th>
+            <th class="num" style="min-width:110px">Season Total</th>
+            <th style="min-width:160px">Season Bar</th>
+          </tr>
+        </thead>
+        <tbody id="team-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PLAYER LEADERBOARD -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Player Leaderboard</div>
+      <div class="section-badge">Top 10 — Last 7 Days</div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>Player</th>
+            <th>Team</th>
+            <th class="num">Week HRs</th>
+            <th style="min-width:160px">Bar</th>
+          </tr>
+        </thead>
+        <tbody id="player-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EV + DISTANCE CARDS -->
+  <div class="two-col">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Top Exit Velocity</div>
+        <div class="section-badge">HRs Last 7 Days</div>
+      </div>
+      <div class="hr-cards" id="ev-cards"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Longest Home Runs</div>
+        <div class="section-badge">HRs Last 7 Days</div>
+      </div>
+      <div class="hr-cards" id="dist-cards"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; 2026-04-13 → 2026-04-19</footer>
+
+<script>
+const DATA = {"team_combined": [{"team": "NYY", "hr_week": 33, "hr_season": 41}, {"team": "ATH", "hr_week": 19, "hr_season": 28}, {"team": "HOU", "hr_week": 17, "hr_season": 38}, {"team": "PHI", "hr_week": 16, "hr_season": 34}, {"team": "PIT", "hr_week": 15, "hr_season": 20}, {"team": "BAL", "hr_week": 11, "hr_season": 29}, {"team": "MIN", "hr_week": 11, "hr_season": 17}, {"team": "CLE", "hr_week": 10, "hr_season": 22}, {"team": "STL", "hr_week": 8, "hr_season": 21}, {"team": "SEA", "hr_week": 8, "hr_season": 28}, {"team": "WSH", "hr_week": 8, "hr_season": 31}, {"team": "CWS", "hr_week": 8, "hr_season": 14}, {"team": "CIN", "hr_week": 7, "hr_season": 29}, {"team": "CHC", "hr_week": 7, "hr_season": 26}, {"team": "COL", "hr_week": 6, "hr_season": 19}, {"team": "LAD", "hr_week": 6, "hr_season": 30}, {"team": "ATL", "hr_week": 6, "hr_season": 23}, {"team": "AZ", "hr_week": 5, "hr_season": 18}, {"team": "BOS", "hr_week": 4, "hr_season": 9}, {"team": "DET", "hr_week": 4, "hr_season": 17}, {"team": "MIL", "hr_week": 4, "hr_season": 30}, {"team": "SD", "hr_week": 2, "hr_season": 22}, {"team": "LAA", "hr_week": 2, "hr_season": 12}, {"team": "MIA", "hr_week": 2, "hr_season": 17}, {"team": "KC", "hr_week": 0, "hr_season": 17}, {"team": "NYM", "hr_week": 0, "hr_season": 15}, {"team": "SF", "hr_week": 0, "hr_season": 10}, {"team": "TB", "hr_week": 0, "hr_season": 11}, {"team": "TEX", "hr_week": 0, "hr_season": 7}, {"team": "TOR", "hr_week": 0, "hr_season": 30}], "player_leaders": [{"player_name": "Mahle, Tyler", "hr_week": 4, "team": "CIN"}, {"player_name": "Kremer, Dean", "hr_week": 4, "team": "BAL"}, {"player_name": "Crochet, Garrett", "hr_week": 4, "team": "BOS"}, {"player_name": "Springs, Jeffrey", "hr_week": 4, "team": "ATH"}, {"player_name": "Severino, Luis", "hr_week": 4, "team": "ATH"}, {"player_name": "Gordon, Colton", "hr_week": 4, "team": "HOU"}, {"player_name": "Weathers, Ryan", "hr_week": 4, "team": "NYY"}, {"player_name": "Cantillo, Joey", "hr_week": 3, "team": "STL"}, {"player_name": "Gore, MacKenzie", "hr_week": 3, "team": "SEA"}, {"player_name": "Ray, Robbie", "hr_week": 3, "team": "CIN"}], "top_ev": [{"player_name": "Kikuchi, Yusei", "team": "NYY", "exit_velo": 116.2, "distance": 456, "angle": 26, "game_date": "2026-04-13 00:00:00", "home_score": 0, "away_score": 0, "rank": 1}, {"player_name": "Pallante, Andre", "team": "HOU", "exit_velo": 116.2, "distance": 421, "angle": 28, "game_date": "2026-04-18 00:00:00", "home_score": 0, "away_score": 2, "rank": 2}, {"player_name": "Leasure, Jordan", "team": "ATH", "exit_velo": 115.3, "distance": 386, "angle": 22, "game_date": "2026-04-18 00:00:00", "home_score": 4, "away_score": 6, "rank": 3}, {"player_name": "Chivilli, Angel", "team": "NYY", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "home_score": 4, "away_score": 6, "rank": 4}, {"player_name": "Gil, Luis", "team": "NYY", "exit_velo": 114.3, "distance": 427, "angle": 24, "game_date": "2026-04-15 00:00:00", "home_score": 3, "away_score": 1, "rank": 5}, {"player_name": "Alvarado, Elvis", "team": "ATH", "exit_velo": 114.1, "distance": 431, "angle": 33, "game_date": "2026-04-17 00:00:00", "home_score": 1, "away_score": 5, "rank": 6}, {"player_name": "Springs, Jeffrey", "team": "ATH", "exit_velo": 114.1, "distance": 425, "angle": 35, "game_date": "2026-04-19 00:00:00", "home_score": 1, "away_score": 4, "rank": 7}, {"player_name": "Severino, Luis", "team": "ATH", "exit_velo": 113.6, "distance": 417, "angle": 21, "game_date": "2026-04-13 00:00:00", "home_score": 0, "away_score": 0, "rank": 8}, {"player_name": "Marinaccio, Ron", "team": "SD", "exit_velo": 113.2, "distance": 434, "angle": 27, "game_date": "2026-04-15 00:00:00", "home_score": 0, "away_score": 4, "rank": 9}, {"player_name": "Eovaldi, Nathan", "team": "SEA", "exit_velo": 112.7, "distance": 381, "angle": 39, "game_date": "2026-04-18 00:00:00", "home_score": 3, "away_score": 1, "rank": 10}], "top_dist": [{"player_name": "Winn, Cole", "team": "ATH", "exit_velo": 112.4, "distance": 467, "angle": 28, "game_date": "2026-04-15 00:00:00", "rank": 1}, {"player_name": "Kikuchi, Yusei", "team": "NYY", "exit_velo": 116.2, "distance": 456, "angle": 26, "game_date": "2026-04-13 00:00:00", "rank": 2}, {"player_name": "Sugano, Tomoyuki", "team": "COL", "exit_velo": 107.9, "distance": 452, "angle": 25, "game_date": "2026-04-17 00:00:00", "rank": 3}, {"player_name": "Sasaki, Roki", "team": "COL", "exit_velo": 105.9, "distance": 448, "angle": 30, "game_date": "2026-04-19 00:00:00", "rank": 4}, {"player_name": "Sandlin, Nick", "team": "NYY", "exit_velo": 111.1, "distance": 446, "angle": 27, "game_date": "2026-04-16 00:00:00", "rank": 5}, {"player_name": "Chivilli, Angel", "team": "NYY", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "rank": 6}, {"player_name": "Weathers, Ryan", "team": "NYY", "exit_velo": 110.5, "distance": 445, "angle": 21, "game_date": "2026-04-14 00:00:00", "rank": 7}, {"player_name": "Doval, Camilo", "team": "NYY", "exit_velo": 109.2, "distance": 445, "angle": 25, "game_date": "2026-04-13 00:00:00", "rank": 8}, {"player_name": "Kremer, Dean", "team": "BAL", "exit_velo": 108.6, "distance": 443, "angle": 28, "game_date": "2026-04-13 00:00:00", "rank": 9}, {"player_name": "Rea, Colin", "team": "PHI", "exit_velo": 105.7, "distance": 442, "angle": 28, "game_date": "2026-04-14 00:00:00", "rank": 10}]};
+
+/* ── TEAM TABLE ── */
+(function() {
+  const maxWeek   = Math.max(...DATA.team_combined.map(r => r.hr_week   || 0));
+  const maxSeason = Math.max(...DATA.team_combined.map(r => r.hr_season || 0));
+  const tbody = document.getElementById('team-tbody');
+  DATA.team_combined.forEach(row => {
+    const pctW = maxWeek   ? Math.round((row.hr_week   / maxWeek)   * 100) : 0;
+    const pctS = maxSeason ? Math.round((row.hr_season / maxSeason) * 100) : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:500">${row.team}</td>
+      <td class="num">${row.hr_week}</td>
+      <td>
+        <div class="bar-cell">
+          <div class="bar-bg"><div class="bar-fill" style="width:${pctW}%"></div></div>
+          <div class="bar-num">${row.hr_week}</div>
+        </div>
+      </td>
+      <td class="num">${row.hr_season}</td>
+      <td>
+        <div class="bar-cell">
+          <div class="bar-bg"><div class="bar-fill blue" style="width:${pctS}%"></div></div>
+          <div class="bar-num">${row.hr_season}</div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+})();
+
+/* ── PLAYER TABLE ── */
+(function() {
+  const maxHR = Math.max(...DATA.player_leaders.map(r => r.hr_week || 0));
+  const tbody = document.getElementById('player-tbody');
+  DATA.player_leaders.forEach((row, i) => {
+    const pct = maxHR ? Math.round((row.hr_week / maxHR) * 100) : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="rank">${i + 1}</td>
+      <td style="font-weight:500">${row.player_name}</td>
+      <td style="color:var(--muted);font-family:var(--mono)">${row.team}</td>
+      <td class="num">${row.hr_week}</td>
+      <td>
+        <div class="bar-cell">
+          <div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <div class="bar-num">${row.hr_week}</div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+})();
+
+/* ── HR CARDS ── */
+function renderCards(containerId, rows, metricKey, metricLabel, accentClass) {
+  const container = document.getElementById(containerId);
+  rows.forEach(row => {
+    const card = document.createElement('div');
+    card.className = `hr-card ${accentClass === 'accent' ? 'gold-card' : ''}`;
+    const ev   = row.exit_velo !== '—' ? row.exit_velo + ' mph' : '—';
+    const dist = row.distance  !== '—' ? row.distance  + ' ft'  : '—';
+    const ang  = row.angle     !== '—' ? row.angle     + '°'    : '—';
+    const mainVal = row[metricKey] !== '—' ? row[metricKey] + (metricKey === 'exit_velo' ? ' mph' : ' ft') : '—';
+    card.innerHTML = `
+      <div class="hr-card-rank">No. ${row.rank}</div>
+      <div class="hr-card-player">${row.player_name}</div>
+      <div class="hr-card-team">${row.team} &nbsp;·&nbsp; ${row.game_date}</div>
+      <div class="hr-card-stats">
+        <div class="hr-card-stat">
+          <div class="hr-card-stat-label">${metricLabel}</div>
+          <div class="hr-card-stat-val accent">${mainVal}</div>
+        </div>
+        ${metricKey !== 'exit_velo' ? `<div class="hr-card-stat"><div class="hr-card-stat-label">Exit Velo</div><div class="hr-card-stat-val">${ev}</div></div>` : ''}
+        ${metricKey !== 'distance'  ? `<div class="hr-card-stat"><div class="hr-card-stat-label">Distance</div><div class="hr-card-stat-val">${dist}</div></div>` : ''}
+        <div class="hr-card-stat">
+          <div class="hr-card-stat-label">Angle</div>
+          <div class="hr-card-stat-val">${ang}</div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+renderCards('ev-cards',   DATA.top_ev,   'exit_velo', 'Exit Velocity', 'accent');
+renderCards('dist-cards', DATA.top_dist, 'distance',  'Distance',      'accent');
+</script>
+</body>
+</html>
