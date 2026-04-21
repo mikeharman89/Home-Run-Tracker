@@ -194,7 +194,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>MLB Home Run Tracker — {{WEEK_LABEL}}</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 <style>
@@ -231,6 +231,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     padding: 2.5rem 2rem 2rem;
     position: relative;
     overflow: hidden;
+  }
+  @media (max-width: 480px) {
+    .hero { padding: 1.5rem 1rem 1.5rem; }
+    .content { padding: 1.5rem 1rem 2rem; }
+    .stat-pill { min-width: 90px; padding: 0.5rem 0.75rem; }
+    .stat-pill-val { font-size: 1.3rem; }
+    .hero-title { font-size: 1.8rem; }
+    .tbl-wrap { font-size: 12px; }
+    .hr-cards { grid-template-columns: 1fr; }
+    canvas#spray-chart { height: 320px !important; }
   }
   .hero::before {
     content: '';
@@ -402,9 +412,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .two-col {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    gap: 0;
   }
-  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+  .two-col > .section { padding: 0 2rem; }
+  .two-col > .section:first-child { padding-left: 0; border-right: 1px solid var(--border); padding-right: 2rem; }
+  .two-col > .section:last-child  { padding-left: 2rem; padding-right: 0; border-left: none; }
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; }
+    .two-col > .section { padding: 0 !important; border: none !important; }
+    .two-col > .section:first-child { border-right: none !important; padding-bottom: 2rem; border-bottom: 1px solid var(--border) !important; }
+  }
 
   /* ── TOP HR CARDS ── */
   .hr-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
@@ -475,15 +492,86 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--muted);
     font-family: var(--mono);
   }
+  /* ── SPRAY TOOLTIP ── */
+  .spray-tooltip {
+    position: fixed;
+    background: var(--navy2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 1000;
+    min-width: 200px;
+    overflow: hidden;
+  }
+  .spray-tooltip.visible { opacity: 1; }
+  .spray-tooltip-header {
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .spray-tooltip-rank {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .spray-tooltip-player {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .spray-tooltip-team {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 1px;
+  }
+  .spray-tooltip-stats {
+    display: flex;
+    gap: 1rem;
+    padding: 8px 12px 10px;
+    flex-wrap: wrap;
+  }
+  .spray-tooltip-stat-label {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .spray-tooltip-stat-val {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #fff;
+  }
+  .spray-tooltip-stat-val.accent { color: var(--gold); }
 </style>
 </head>
 <body>
 
+<div class="spray-tooltip" id="spray-tooltip">
+  <div class="spray-tooltip-header">
+    <div class="spray-tooltip-rank" id="stt-rank"></div>
+    <div class="spray-tooltip-player" id="stt-player"></div>
+    <div class="spray-tooltip-team" id="stt-team"></div>
+  </div>
+  <div class="spray-tooltip-stats">
+    <div><div class="spray-tooltip-stat-label">Distance</div><div class="spray-tooltip-stat-val accent" id="stt-dist"></div></div>
+    <div><div class="spray-tooltip-stat-label">Exit Velo</div><div class="spray-tooltip-stat-val" id="stt-ev"></div></div>
+    <div><div class="spray-tooltip-stat-label">Angle</div><div class="spray-tooltip-stat-val" id="stt-angle"></div></div>
+    <div><div class="spray-tooltip-stat-label">Date</div><div class="spray-tooltip-stat-val" id="stt-date"></div></div>
+  </div>
+</div>
+
 <div class="hero">
   <div class="hero-inner">
-    <div class="hero-eyebrow">MLB Statcast Weekly Digest</div>
     <h1 class="hero-title">Home Run <span>Tracker</span></h1>
-    <div class="hero-meta">{{WEEK_LABEL}} &nbsp;·&nbsp; Generated {{GENERATED}}</div>
+    <div class="hero-meta">Generated {{GENERATED}}</div>
     <div class="stats-row">
       <div class="stat-pill">
         <div class="stat-pill-label">HRs Last 7 Days</div>
@@ -512,7 +600,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="section-header">
       <div class="section-title">Home Runs by Team</div>
       <div class="section-badge">Last 7 Days + Season</div>
-      <div style="margin-left:auto;display:flex;gap:6px;">
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">Sort By</span>
         <button id="sort-week" onclick="sortTeams('week')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
         <button id="sort-season" onclick="sortTeams('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season Total</button>
       </div>
@@ -552,8 +641,29 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- SEASON PLAYER LEADERBOARD -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Season Home Run Leaders</div>
+      <div class="section-badge">Top 10 — Full Season</div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>Player</th>
+            <th>Team</th>
+            <th style="min-width:180px">Season Total</th>
+          </tr>
+        </thead>
+        <tbody id="player-season-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- EV + DISTANCE CARDS -->
-  <div class="two-col" style="border-top:1px solid var(--border);padding-top:2.5rem;">
+  <div class="two-col" style="border-top:1px solid var(--border);padding-top:2.5rem;margin-top:0;">
     <div class="section">
       <div class="section-header">
         <div class="section-title">Top Exit Velocity</div>
@@ -565,7 +675,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <div class="hr-cards" id="ev-cards"></div>
     </div>
 
-    <div class="section" style="border-left:1px solid var(--border);padding-left:2rem;">
+    <div class="section">
       <div class="section-header">
         <div class="section-title">Longest Home Runs</div>
         <div style="margin-left:auto;display:flex;gap:6px;">
@@ -582,6 +692,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="section-header">
       <div class="section-title">Landing Spot Map</div>
       <div class="section-badge" id="spray-badge">Longest HRs — Last 7 Days</div>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <button id="spray-btn-week"   onclick="switchSpray('week')"   style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
+        <button id="spray-btn-season" onclick="switchSpray('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season</button>
+      </div>
     </div>
     <div style="display:flex;justify-content:center;">
       <canvas id="spray-chart" width="700" height="540" style="width:100%;max-width:700px;display:block;"></canvas>
@@ -652,6 +766,29 @@ sortTeams('week');
   });
 })();
 
+/* ── SEASON PLAYER TABLE ── */
+(function() {
+  const rows  = DATA.player_leaders_szn || [];
+  const maxHR = Math.max(...rows.map(r => r.hr_week || 0));
+  const tbody = document.getElementById('player-season-tbody');
+  rows.forEach((row, i) => {
+    const pct = maxHR ? Math.round((row.hr_week / maxHR) * 100) : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="rank">${i + 1}</td>
+      <td style="font-weight:500">${row.player_name}</td>
+      <td style="color:var(--muted);font-family:var(--mono)">${row.team}</td>
+      <td>
+        <div class="bar-cell">
+          <div class="bar-bg"><div class="bar-fill blue" style="width:${pct}%"></div></div>
+          <div class="bar-num">${row.hr_week}</div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+})();
+
 /* ── HR CARDS ── */
 function renderCards(containerId, rows, metricKey, metricLabel) {
   const container = document.getElementById(containerId);
@@ -697,9 +834,15 @@ function switchEV(mode) {
 function switchDist(mode) {
   const rows = mode === 'week' ? DATA.top_dist_week : DATA.top_dist_season;
   renderCards('dist-cards', rows, 'distance', 'Distance');
-  drawSpray(rows);
   document.getElementById('dist-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
   document.getElementById('dist-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
+}
+
+function switchSpray(mode) {
+  const rows = mode === 'week' ? DATA.top_dist_week : DATA.top_dist_season;
+  drawSpray(rows);
+  document.getElementById('spray-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
+  document.getElementById('spray-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
   document.getElementById('spray-badge').textContent = mode === 'week' ? 'Longest HRs — Last 7 Days' : 'Longest HRs — Season';
 }
 
@@ -809,12 +952,18 @@ function drawSpray(rows) {
   const colors = ['#F5A623','#F0B040','#E8C060','#2C7BE5','#5B9CF0',
                   '#88B8F8','#D0021B','#E84444','#F07070','#F5A0A0'];
 
+  // Store dot positions for hit-testing on hover
+  canvas._sprayDots = [];
+
   rows.forEach((row, i) => {
     const hcx = +row.hc_x;
     const hcy = +row.hc_y;
     if (!hcx || !hcy || isNaN(hcx) || isNaN(hcy)) return;
 
     const [lx, ly] = toCanvas(hcx, hcy);
+
+    // Store for hover detection
+    canvas._sprayDots.push({ lx, ly, row, i });
 
     // Dashed arc from home plate to landing
     const cpx = (HX + lx) / 2;
@@ -841,7 +990,7 @@ function drawSpray(rows) {
     ctx.fillStyle = colors[i] || '#aaa';
     ctx.fill();
 
-    // Rank number
+    // Rank number only — no name label
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 8px IBM Plex Mono, monospace';
     ctx.textAlign = 'center';
@@ -849,22 +998,59 @@ function drawSpray(rows) {
     ctx.fillText(i + 1, lx, ly);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-
-    // Name label offset slightly from dot
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.font = '9px IBM Plex Mono, monospace';
-    const name = (row.player_name || '').split(' ').pop();
-    const dist = row.distance !== '—' ? row.distance + 'ft' : '';
-    const offsetX = hcx > SC_HOME_X ? 10 : -10;
-    ctx.textAlign = hcx > SC_HOME_X ? 'left' : 'right';
-    ctx.fillText(name + (dist ? ' ' + dist : ''), lx + offsetX, ly - 8);
-    ctx.textAlign = 'left';
   });
+
+  // ── CANVAS HOVER → TOOLTIP ──
+  canvas.onmousemove = function(e) {
+    const rect   = canvas.getBoundingClientRect();
+    const scaleX = canvas.width  / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top)  * scaleY;
+    const HIT_R = 14;
+
+    const tt = document.getElementById('spray-tooltip');
+    let hit = null;
+    for (const dot of (canvas._sprayDots || [])) {
+      const dx = mx - dot.lx, dy = my - dot.ly;
+      if (Math.sqrt(dx*dx + dy*dy) <= HIT_R) { hit = dot; break; }
+    }
+
+    if (hit) {
+      const r = hit.row;
+      document.getElementById('stt-rank').textContent   = 'No. ' + (hit.i + 1);
+      document.getElementById('stt-player').textContent = r.player_name || '—';
+      document.getElementById('stt-team').textContent   = r.team || '—';
+      document.getElementById('stt-dist').textContent   = r.distance  !== '—' ? r.distance  + ' ft'  : '—';
+      document.getElementById('stt-ev').textContent     = r.exit_velo !== '—' ? r.exit_velo + ' mph' : '—';
+      document.getElementById('stt-angle').textContent  = r.angle     !== '—' ? r.angle     + '°'   : '—';
+      document.getElementById('stt-date').textContent   = r.game_date || '—';
+
+      // Position tooltip — keep it inside the viewport
+      const TW = 220, TH = 130;
+      let tx = e.clientX + 14, ty = e.clientY - 60;
+      if (tx + TW > window.innerWidth  - 10) tx = e.clientX - TW - 14;
+      if (ty + TH > window.innerHeight - 10) ty = e.clientY - TH - 10;
+      tt.style.left = tx + 'px';
+      tt.style.top  = ty + 'px';
+      tt.classList.add('visible');
+      canvas.style.cursor = 'pointer';
+    } else {
+      tt.classList.remove('visible');
+      canvas.style.cursor = 'default';
+    }
+  };
+
+  canvas.onmouseleave = function() {
+    document.getElementById('spray-tooltip').classList.remove('visible');
+    canvas.style.cursor = 'default';
+  };
 }
 
 /* ── INIT ── */
 switchEV('week');
 switchDist('week');
+switchSpray('week');
 </script>
 </body>
 </html>
@@ -916,13 +1102,17 @@ def main():
     top_ev_val   = round(ev_week["exit_velo"].iloc[0], 1)  if not ev_week.empty   else "—"
     top_dist_val = int(dist_week["distance"].iloc[0])       if not dist_week.empty else "—"
 
+    # Season player leaderboard
+    pl_season = player_leaderboard(hrs_szn, top_n=10)
+
     data_payload = {
-        "team_combined":   df_to_list(tc),
-        "player_leaders":  df_to_list(pl),
-        "top_ev_week":     df_to_list(ev_week),
-        "top_ev_season":   df_to_list(ev_season),
-        "top_dist_week":   df_to_list(dist_week),
-        "top_dist_season": df_to_list(dist_season),
+        "team_combined":      df_to_list(tc),
+        "player_leaders":     df_to_list(pl),
+        "player_leaders_szn": df_to_list(pl_season),
+        "top_ev_week":        df_to_list(ev_week),
+        "top_ev_season":      df_to_list(ev_season),
+        "top_dist_week":      df_to_list(dist_week),
+        "top_dist_season":    df_to_list(dist_season),
     }
 
     html = (HTML_TEMPLATE
