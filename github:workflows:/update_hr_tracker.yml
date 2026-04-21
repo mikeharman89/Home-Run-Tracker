@@ -2,7 +2,7 @@ name: Update HR Tracker
 
 on:
   schedule:
-    - cron: '0 16 * * *'   # 11:00 AM ET (UTC-5) — adjust to '0 15 * * *' during EDT (UTC-4)
+    - cron: '0 18 * * *'   # 1:00 PM ET (UTC-5) — adjust to '0 15 * * *' during EDT (UTC-4)
   workflow_dispatch:         # allows manual trigger from GitHub UI
 
 jobs:
