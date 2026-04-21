@@ -28,7 +28,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run HR tracker
-        run: python hr_tracker.py --out index.html
+        run: python HomeRunTracker.py --out index.html
 
       - name: Commit and push report
         run: |
