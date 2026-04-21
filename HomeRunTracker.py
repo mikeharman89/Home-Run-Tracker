@@ -1117,7 +1117,7 @@ def main():
 
     html = (HTML_TEMPLATE
         .replace("{{WEEK_LABEL}}",    week_label)
-        .replace("{{GENERATED}}",     (lambda now: now.strftime("%b %d, %Y") + now.strftime(" %I:%M %p ").lstrip("0").replace(" 0", " ") + ("EDT" if (3 <= now.month <= 10) else "EST"))(datetime.now()))
+        .replace("{{GENERATED}}",     (lambda now: now.strftime("%b %d, %Y") + now.strftime(" %I:%M %p ").lstrip("0").replace(" 0", " ") + ("MDT" if (3 <= now.month <= 11) else "MST"))(datetime.now(tz=__import__('zoneinfo').ZoneInfo("America/Denver"))))
         .replace("{{TOTAL_WEEK}}",    str(len(hrs)))
         .replace("{{TOTAL_SEASON}}",  str(int(tc["hr_season"].sum())))
         .replace("{{TOP_EV}}",        str(top_ev_val))
