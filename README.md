@@ -5,8 +5,8 @@ A weekly MLB home run report auto-generated daily via GitHub Actions and publish
 **Live report →** `https://mikeharman89.github.io/home-run-tracker/`
 
 ## What it tracks
-- Home runs by team (this week + season running total)
-- Top 10 player leaderboard for the week
+- Home runs by team (last 7 days + season running total)
+- Top 10 player leaderboard for the last 7 days
 - Top 10 HRs by exit velocity
 - Top 10 HRs by distance
 
@@ -32,4 +32,4 @@ python hr_tracker.py --start 2026-04-01 --end 2026-04-10
 ```
 
 ## Schedule
-Runs daily at **11:00 AM ET** via GitHub Actions cron. You can also trigger a manual run from the Actions tab.
+Runs daily at **1:00 PM ET** via GitHub Actions cron. You can also trigger a manual run from the Actions tab.
