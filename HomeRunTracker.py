@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Weekly MLB Home Run Tracker
 Generates an HTML report using pybaseball + Statcast data.
@@ -34,7 +33,7 @@ def parse_args():
     parser.add_argument("--start", default=None, help="Start date YYYY-MM-DD (default: 7 days ago)")
     parser.add_argument("--end",   default=None, help="End date YYYY-MM-DD (default: today)")
     parser.add_argument("--season", type=int, default=None, help="Pull full season-to-date instead")
-    parser.add_argument("--out", default="/Users/michaelharman/Projects/Home Run Tracker/index.html", help="Output HTML filename")
+    parser.add_argument("--out", default="index.html", help="Output HTML filename")
     return parser.parse_args()
 
 
@@ -54,8 +53,23 @@ def get_date_range(args):
 def fetch_home_runs(start, end):
     print(f"Fetching Statcast data: {start} → {end}")
     df = statcast(start_dt=start, end_dt=end)
-    hrs = df[df["events"] == "home_run"].copy()
-    print(f"  Found {len(hrs)} home runs")
+    hrs = df[
+        (df["events"] == "home_run") &
+        (df["game_type"] == "R")
+    ].copy()
+    # In Statcast, player_name = pitcher. Batter name is in the description field
+    # or we build it from batter_name columns. Use des field to extract batter name.
+    # Most reliable: use batting_team side and the batter field with a name lookup.
+    # pybaseball attaches batter name via the 'batter_name' col when available,
+    # otherwise fall back to parsing the description.
+    if "batter_name" in hrs.columns:
+        hrs["batter_name"] = hrs["batter_name"]
+    elif "des" in hrs.columns:
+        # description starts with batter name e.g. "Judge homers (3) on a fly ball..."
+        hrs["batter_name"] = hrs["des"].str.extract(r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))")[0].str.strip()
+    else:
+        hrs["batter_name"] = hrs["player_name"]  # fallback
+    print(f"  Found {len(hrs)} regular season home runs")
     return hrs
 
 
@@ -79,7 +93,10 @@ def team_season(start, end):
     season_start = f"{year}-03-26"
     print(f"  Fetching full-season data for running totals ({season_start} → {end}) …")
     df = statcast(start_dt=season_start, end_dt=end)
-    hrs = df[df["events"] == "home_run"].copy()
+    hrs = df[
+        (df["events"] == "home_run") &
+        (df["game_type"] == "R")
+    ].copy()
     tbl = (
         hrs.groupby("home_team")["events"]
         .count()
@@ -94,12 +111,13 @@ def player_leaderboard(hrs, top_n=10):
     """Top N players by home runs in the window, with season running total."""
     year = hrs["game_date"].max().strftime("%Y") if not hrs.empty else str(datetime.today().year)
     tbl = (
-        hrs.groupby("player_name")
+        hrs.groupby("batter_name")
         .agg(
             hr_week=("events", "count"),
             team=("home_team", lambda x: x.mode()[0]),
         )
         .reset_index()
+        .rename(columns={"batter_name": "player_name"})
         .sort_values("hr_week", ascending=False)
         .head(top_n)
     )
@@ -107,12 +125,14 @@ def player_leaderboard(hrs, top_n=10):
 
 
 def top_exit_velocity(hrs, top_n=10):
-    """Top N HRs by exit velocity."""
-    cols = ["player_name", "home_team", "launch_speed", "hit_distance_sc",
+    """Top N HRs by exit velocity — batters only (excludes pitchers batting)."""
+    # pitcher_1 is the pitching team pitcher; batter != pitcher_1 ensures we have a position player
+    cols = ["batter_name", "home_team", "launch_speed", "hit_distance_sc",
             "launch_angle", "game_date", "home_score", "away_score"]
     sub = hrs.dropna(subset=["launch_speed"])[cols].copy()
     sub = sub.sort_values("launch_speed", ascending=False).head(top_n).reset_index(drop=True)
     sub.rename(columns={
+        "batter_name": "player_name",
         "home_team": "team",
         "launch_speed": "exit_velo",
         "hit_distance_sc": "distance",
@@ -123,12 +143,13 @@ def top_exit_velocity(hrs, top_n=10):
 
 
 def top_distance(hrs, top_n=10):
-    """Top N HRs by distance."""
-    cols = ["player_name", "home_team", "launch_speed", "hit_distance_sc",
+    """Top N HRs by distance — batters only (excludes pitchers batting)."""
+    cols = ["batter_name", "home_team", "launch_speed", "hit_distance_sc",
             "launch_angle", "game_date"]
     sub = hrs.dropna(subset=["hit_distance_sc"])[cols].copy()
     sub = sub.sort_values("hit_distance_sc", ascending=False).head(top_n).reset_index(drop=True)
     sub.rename(columns={
+        "batter_name": "player_name",
         "home_team": "team",
         "launch_speed": "exit_velo",
         "hit_distance_sc": "distance",
@@ -485,10 +506,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <thead>
           <tr>
             <th>Team</th>
-            <th class="num" style="min-width:100px">Last 7 Days</th>
-            <th style="min-width:160px">7-Day Bar</th>
-            <th class="num" style="min-width:110px">Season Total</th>
-            <th style="min-width:160px">Season Bar</th>
+            <th style="min-width:180px">Last 7 Days</th>
+            <th style="min-width:180px">Season Total</th>
           </tr>
         </thead>
         <tbody id="team-tbody"></tbody>
@@ -509,8 +528,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <th class="num">#</th>
             <th>Player</th>
             <th>Team</th>
-            <th class="num">Week HRs</th>
-            <th style="min-width:160px">Bar</th>
+            <th style="min-width:180px">Last 7 Days</th>
           </tr>
         </thead>
         <tbody id="player-tbody"></tbody>
@@ -555,14 +573,12 @@ const DATA = {{DATA_JSON}};
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="font-weight:500">${row.team}</td>
-      <td class="num">${row.hr_week}</td>
       <td>
         <div class="bar-cell">
           <div class="bar-bg"><div class="bar-fill" style="width:${pctW}%"></div></div>
           <div class="bar-num">${row.hr_week}</div>
         </div>
       </td>
-      <td class="num">${row.hr_season}</td>
       <td>
         <div class="bar-cell">
           <div class="bar-bg"><div class="bar-fill blue" style="width:${pctS}%"></div></div>
@@ -585,7 +601,6 @@ const DATA = {{DATA_JSON}};
       <td class="rank">${i + 1}</td>
       <td style="font-weight:500">${row.player_name}</td>
       <td style="color:var(--muted);font-family:var(--mono)">${row.team}</td>
-      <td class="num">${row.hr_week}</td>
       <td>
         <div class="bar-cell">
           <div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>
