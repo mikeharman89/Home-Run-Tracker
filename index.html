@@ -291,7 +291,7 @@
   <div class="hero-inner">
     <div class="hero-eyebrow">MLB Statcast Weekly Digest</div>
     <h1 class="hero-title">Home Run <span>Tracker</span></h1>
-    <div class="hero-meta">2026-04-14 → 2026-04-20 &nbsp;·&nbsp; Generated Apr 21, 2026 00:03</div>
+    <div class="hero-meta">2026-04-14 → 2026-04-20 &nbsp;·&nbsp; Generated Apr 21, 2026 00:12</div>
     <div class="stats-row">
       <div class="stat-pill">
         <div class="stat-pill-label">HRs Last 7 Days</div>
@@ -365,7 +365,10 @@
     <div class="section">
       <div class="section-header">
         <div class="section-title">Top Exit Velocity</div>
-        <div class="section-badge">HRs Last 7 Days</div>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button id="ev-btn-week"   onclick="switchEV('week')"   style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
+          <button id="ev-btn-season" onclick="switchEV('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season</button>
+        </div>
       </div>
       <div class="hr-cards" id="ev-cards"></div>
     </div>
@@ -373,7 +376,13 @@
     <div class="section" style="border-left:1px solid var(--border);padding-left:2rem;">
       <div class="section-header">
         <div class="section-title">Longest Home Runs</div>
-        <div class="section-badge">HRs Last 7 Days</div>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button id="dist-btn-week"   onclick="switchDist('week')"   style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
+          <button id="dist-btn-season" onclick="switchDist('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season</button>
+        </div>
+      </div>
+      <div style="margin-bottom:1.25rem;">
+        <canvas id="spray-chart" width="480" height="380" style="width:100%;max-width:480px;display:block;"></canvas>
       </div>
       <div class="hr-cards" id="dist-cards"></div>
     </div>
@@ -384,7 +393,7 @@
 <footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; 2026-04-14 → 2026-04-20</footer>
 
 <script>
-const DATA = {"team_combined": [{"team": "NYY", "hr_week": 13, "hr_season": 32}, {"team": "LAA", "hr_week": 13, "hr_season": 34}, {"team": "CWS", "hr_week": 12, "hr_season": 24}, {"team": "ATL", "hr_week": 8, "hr_season": 29}, {"team": "PIT", "hr_week": 8, "hr_season": 26}, {"team": "CHC", "hr_week": 8, "hr_season": 24}, {"team": "CLE", "hr_week": 8, "hr_season": 25}, {"team": "STL", "hr_week": 8, "hr_season": 25}, {"team": "HOU", "hr_week": 8, "hr_season": 27}, {"team": "LAD", "hr_week": 8, "hr_season": 37}, {"team": "BAL", "hr_week": 6, "hr_season": 21}, {"team": "TB", "hr_week": 6, "hr_season": 18}, {"team": "CIN", "hr_week": 6, "hr_season": 21}, {"team": "COL", "hr_week": 6, "hr_season": 22}, {"team": "SEA", "hr_week": 5, "hr_season": 21}, {"team": "ATH", "hr_week": 5, "hr_season": 20}, {"team": "SF", "hr_week": 5, "hr_season": 13}, {"team": "TEX", "hr_week": 5, "hr_season": 24}, {"team": "PHI", "hr_week": 5, "hr_season": 22}, {"team": "WSH", "hr_week": 5, "hr_season": 24}, {"team": "MIN", "hr_week": 5, "hr_season": 26}, {"team": "DET", "hr_week": 5, "hr_season": 17}, {"team": "AZ", "hr_week": 5, "hr_season": 18}, {"team": "KC", "hr_week": 4, "hr_season": 17}, {"team": "TOR", "hr_week": 4, "hr_season": 18}, {"team": "NYM", "hr_week": 3, "hr_season": 16}, {"team": "MIL", "hr_week": 3, "hr_season": 19}, {"team": "BOS", "hr_week": 2, "hr_season": 13}, {"team": "MIA", "hr_week": 2, "hr_season": 15}, {"team": "SD", "hr_week": 1, "hr_season": 17}], "player_leaders": [{"player_name": "Yordan Alvarez", "hr_week": 4, "team": "HOU"}, {"player_name": "Ben Rice", "hr_week": 4, "team": "NYY"}, {"player_name": "Munetaka Murakami", "hr_week": 4, "team": "CWS"}, {"player_name": "Sal Stewart", "hr_week": 3, "team": "CIN"}, {"player_name": "Mike Trout", "hr_week": 3, "team": "LAA"}, {"player_name": "Junior Caminero", "hr_week": 3, "team": "TB"}, {"player_name": "Hunter Goodman", "hr_week": 3, "team": "COL"}, {"player_name": "Aaron Judge", "hr_week": 3, "team": "NYY"}, {"player_name": "Austin Riley", "hr_week": 3, "team": "ATL"}, {"player_name": "Daniel Schneemann", "hr_week": 2, "team": "CLE"}], "top_ev": [{"player_name": "Yordan Alvarez", "team": "HOU", "exit_velo": 116.2, "distance": 421, "angle": 28, "game_date": "2026-04-18 00:00:00", "home_score": 0, "away_score": 2, "rank": 1}, {"player_name": "Nick Kurtz", "team": "ATH", "exit_velo": 115.3, "distance": 386, "angle": 22, "game_date": "2026-04-18 00:00:00", "home_score": 4, "away_score": 6, "rank": 2}, {"player_name": "Mike Trout", "team": "LAA", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "home_score": 4, "away_score": 6, "rank": 3}, {"player_name": "Logan O'Hoppe", "team": "LAA", "exit_velo": 114.3, "distance": 427, "angle": 24, "game_date": "2026-04-15 00:00:00", "home_score": 3, "away_score": 1, "rank": 4}, {"player_name": "Munetaka Murakami", "team": "CWS", "exit_velo": 114.1, "distance": 425, "angle": 35, "game_date": "2026-04-19 00:00:00", "home_score": 1, "away_score": 4, "rank": 5}, {"player_name": "Munetaka Murakami", "team": "CWS", "exit_velo": 114.1, "distance": 431, "angle": 33, "game_date": "2026-04-17 00:00:00", "home_score": 1, "away_score": 5, "rank": 6}, {"player_name": "Luke Raley", "team": "SEA", "exit_velo": 113.2, "distance": 434, "angle": 27, "game_date": "2026-04-15 00:00:00", "home_score": 0, "away_score": 4, "rank": 7}, {"player_name": "Luke Raley", "team": "SEA", "exit_velo": 112.7, "distance": 381, "angle": 39, "game_date": "2026-04-18 00:00:00", "home_score": 3, "away_score": 1, "rank": 8}, {"player_name": "Shea Langeliers", "team": "ATH", "exit_velo": 112.4, "distance": 467, "angle": 28, "game_date": "2026-04-15 00:00:00", "home_score": 2, "away_score": 2, "rank": 9}, {"player_name": "Amed Rosario", "team": "NYY", "exit_velo": 112.1, "distance": 390, "angle": 22, "game_date": "2026-04-18 00:00:00", "home_score": 0, "away_score": 0, "rank": 10}], "top_dist": [{"player_name": "Shea Langeliers", "team": "ATH", "exit_velo": 112.4, "distance": 467, "angle": 28, "game_date": "2026-04-15 00:00:00", "rank": 1}, {"player_name": "Max Muncy", "team": "LAD", "exit_velo": 107.9, "distance": 452, "angle": 25, "game_date": "2026-04-17 00:00:00", "rank": 2}, {"player_name": "Kyle Karros", "team": "COL", "exit_velo": 105.9, "distance": 448, "angle": 30, "game_date": "2026-04-19 00:00:00", "rank": 3}, {"player_name": "Mike Trout", "team": "LAA", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "rank": 4}, {"player_name": "Giancarlo Stanton", "team": "NYY", "exit_velo": 111.1, "distance": 446, "angle": 27, "game_date": "2026-04-16 00:00:00", "rank": 5}, {"player_name": "Jo Adell", "team": "LAA", "exit_velo": 110.5, "distance": 445, "angle": 21, "game_date": "2026-04-14 00:00:00", "rank": 6}, {"player_name": "Edmundo Sosa", "team": "PHI", "exit_velo": 105.7, "distance": 442, "angle": 28, "game_date": "2026-04-14 00:00:00", "rank": 7}, {"player_name": "Elly De La Cruz", "team": "CIN", "exit_velo": 109.3, "distance": 442, "angle": 30, "game_date": "2026-04-15 00:00:00", "rank": 8}, {"player_name": "James Wood", "team": "WSH", "exit_velo": 110.5, "distance": 441, "angle": 29, "game_date": "2026-04-17 00:00:00", "rank": 9}, {"player_name": "Byron Buxton", "team": "MIN", "exit_velo": 107.9, "distance": 438, "angle": 28, "game_date": "2026-04-14 00:00:00", "rank": 10}]};
+const DATA = {"team_combined": [{"team": "NYY", "hr_week": 13, "hr_season": 32}, {"team": "LAA", "hr_week": 13, "hr_season": 34}, {"team": "CWS", "hr_week": 12, "hr_season": 24}, {"team": "ATL", "hr_week": 8, "hr_season": 29}, {"team": "PIT", "hr_week": 8, "hr_season": 26}, {"team": "CHC", "hr_week": 8, "hr_season": 24}, {"team": "CLE", "hr_week": 8, "hr_season": 25}, {"team": "STL", "hr_week": 8, "hr_season": 25}, {"team": "HOU", "hr_week": 8, "hr_season": 27}, {"team": "LAD", "hr_week": 8, "hr_season": 37}, {"team": "BAL", "hr_week": 6, "hr_season": 21}, {"team": "TB", "hr_week": 6, "hr_season": 18}, {"team": "CIN", "hr_week": 6, "hr_season": 21}, {"team": "COL", "hr_week": 6, "hr_season": 22}, {"team": "SEA", "hr_week": 5, "hr_season": 21}, {"team": "ATH", "hr_week": 5, "hr_season": 20}, {"team": "SF", "hr_week": 5, "hr_season": 13}, {"team": "TEX", "hr_week": 5, "hr_season": 24}, {"team": "PHI", "hr_week": 5, "hr_season": 22}, {"team": "WSH", "hr_week": 5, "hr_season": 24}, {"team": "MIN", "hr_week": 5, "hr_season": 26}, {"team": "DET", "hr_week": 5, "hr_season": 17}, {"team": "AZ", "hr_week": 5, "hr_season": 18}, {"team": "KC", "hr_week": 4, "hr_season": 17}, {"team": "TOR", "hr_week": 4, "hr_season": 18}, {"team": "NYM", "hr_week": 3, "hr_season": 16}, {"team": "MIL", "hr_week": 3, "hr_season": 19}, {"team": "BOS", "hr_week": 2, "hr_season": 13}, {"team": "MIA", "hr_week": 2, "hr_season": 15}, {"team": "SD", "hr_week": 1, "hr_season": 17}], "player_leaders": [{"player_name": "Yordan Alvarez", "hr_week": 4, "team": "HOU"}, {"player_name": "Ben Rice", "hr_week": 4, "team": "NYY"}, {"player_name": "Munetaka Murakami", "hr_week": 4, "team": "CWS"}, {"player_name": "Sal Stewart", "hr_week": 3, "team": "CIN"}, {"player_name": "Mike Trout", "hr_week": 3, "team": "LAA"}, {"player_name": "Junior Caminero", "hr_week": 3, "team": "TB"}, {"player_name": "Hunter Goodman", "hr_week": 3, "team": "COL"}, {"player_name": "Aaron Judge", "hr_week": 3, "team": "NYY"}, {"player_name": "Austin Riley", "hr_week": 3, "team": "ATL"}, {"player_name": "Daniel Schneemann", "hr_week": 2, "team": "CLE"}], "top_ev_week": [{"player_name": "Yordan Alvarez", "team": "HOU", "exit_velo": 116.2, "distance": 421, "angle": 28, "game_date": "2026-04-18 00:00:00", "home_score": 0, "away_score": 2, "rank": 1}, {"player_name": "Nick Kurtz", "team": "ATH", "exit_velo": 115.3, "distance": 386, "angle": 22, "game_date": "2026-04-18 00:00:00", "home_score": 4, "away_score": 6, "rank": 2}, {"player_name": "Mike Trout", "team": "LAA", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "home_score": 4, "away_score": 6, "rank": 3}, {"player_name": "Logan O'Hoppe", "team": "LAA", "exit_velo": 114.3, "distance": 427, "angle": 24, "game_date": "2026-04-15 00:00:00", "home_score": 3, "away_score": 1, "rank": 4}, {"player_name": "Munetaka Murakami", "team": "CWS", "exit_velo": 114.1, "distance": 425, "angle": 35, "game_date": "2026-04-19 00:00:00", "home_score": 1, "away_score": 4, "rank": 5}, {"player_name": "Munetaka Murakami", "team": "CWS", "exit_velo": 114.1, "distance": 431, "angle": 33, "game_date": "2026-04-17 00:00:00", "home_score": 1, "away_score": 5, "rank": 6}, {"player_name": "Luke Raley", "team": "SEA", "exit_velo": 113.2, "distance": 434, "angle": 27, "game_date": "2026-04-15 00:00:00", "home_score": 0, "away_score": 4, "rank": 7}, {"player_name": "Luke Raley", "team": "SEA", "exit_velo": 112.7, "distance": 381, "angle": 39, "game_date": "2026-04-18 00:00:00", "home_score": 3, "away_score": 1, "rank": 8}, {"player_name": "Shea Langeliers", "team": "ATH", "exit_velo": 112.4, "distance": 467, "angle": 28, "game_date": "2026-04-15 00:00:00", "home_score": 2, "away_score": 2, "rank": 9}, {"player_name": "Amed Rosario", "team": "NYY", "exit_velo": 112.1, "distance": 390, "angle": 22, "game_date": "2026-04-18 00:00:00", "home_score": 0, "away_score": 0, "rank": 10}], "top_ev_season": [{"player_name": "Aaron Judge", "team": "NYY", "exit_velo": 116.2, "distance": 456, "angle": 26, "game_date": "2026-04-13 00:00:00", "home_score": 0, "away_score": 0, "rank": 1}, {"player_name": "Yordan Alvarez", "team": "HOU", "exit_velo": 116.2, "distance": 421, "angle": 28, "game_date": "2026-04-18 00:00:00", "home_score": 0, "away_score": 2, "rank": 2}, {"player_name": "Nick Kurtz", "team": "ATH", "exit_velo": 115.3, "distance": 386, "angle": 22, "game_date": "2026-04-18 00:00:00", "home_score": 4, "away_score": 6, "rank": 3}, {"player_name": "Mike Trout", "team": "LAA", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "home_score": 4, "away_score": 6, "rank": 4}, {"player_name": "Shohei Ohtani", "team": "LAD", "exit_velo": 114.6, "distance": 438, "angle": 26, "game_date": "2026-04-05 00:00:00", "home_score": 0, "away_score": 0, "rank": 5}, {"player_name": "Logan O'Hoppe", "team": "LAA", "exit_velo": 114.3, "distance": 427, "angle": 24, "game_date": "2026-04-15 00:00:00", "home_score": 3, "away_score": 1, "rank": 6}, {"player_name": "James Wood", "team": "WSH", "exit_velo": 114.3, "distance": 409, "angle": 18, "game_date": "2026-04-06 00:00:00", "home_score": 3, "away_score": 6, "rank": 7}, {"player_name": "Munetaka Murakami", "team": "CWS", "exit_velo": 114.1, "distance": 431, "angle": 33, "game_date": "2026-04-17 00:00:00", "home_score": 1, "away_score": 5, "rank": 8}, {"player_name": "Munetaka Murakami", "team": "CWS", "exit_velo": 114.1, "distance": 425, "angle": 35, "game_date": "2026-04-19 00:00:00", "home_score": 1, "away_score": 4, "rank": 9}, {"player_name": "Luke Raley", "team": "SEA", "exit_velo": 113.8, "distance": 344, "angle": 22, "game_date": "2026-03-26 00:00:00", "home_score": 2, "away_score": 3, "rank": 10}], "top_dist_week": [{"player_name": "Shea Langeliers", "team": "ATH", "exit_velo": 112.4, "distance": 467, "angle": 28, "game_date": "2026-04-15 00:00:00", "rank": 1}, {"player_name": "Max Muncy", "team": "LAD", "exit_velo": 107.9, "distance": 452, "angle": 25, "game_date": "2026-04-17 00:00:00", "rank": 2}, {"player_name": "Kyle Karros", "team": "COL", "exit_velo": 105.9, "distance": 448, "angle": 30, "game_date": "2026-04-19 00:00:00", "rank": 3}, {"player_name": "Mike Trout", "team": "LAA", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "rank": 4}, {"player_name": "Giancarlo Stanton", "team": "NYY", "exit_velo": 111.1, "distance": 446, "angle": 27, "game_date": "2026-04-16 00:00:00", "rank": 5}, {"player_name": "Jo Adell", "team": "LAA", "exit_velo": 110.5, "distance": 445, "angle": 21, "game_date": "2026-04-14 00:00:00", "rank": 6}, {"player_name": "Edmundo Sosa", "team": "PHI", "exit_velo": 105.7, "distance": 442, "angle": 28, "game_date": "2026-04-14 00:00:00", "rank": 7}, {"player_name": "Elly De La Cruz", "team": "CIN", "exit_velo": 109.3, "distance": 442, "angle": 30, "game_date": "2026-04-15 00:00:00", "rank": 8}, {"player_name": "James Wood", "team": "WSH", "exit_velo": 110.5, "distance": 441, "angle": 29, "game_date": "2026-04-17 00:00:00", "rank": 9}, {"player_name": "Byron Buxton", "team": "MIN", "exit_velo": 107.9, "distance": 438, "angle": 28, "game_date": "2026-04-14 00:00:00", "rank": 10}], "top_dist_season": [{"player_name": "Shea Langeliers", "team": "ATH", "exit_velo": 112.4, "distance": 467, "angle": 28, "game_date": "2026-04-15 00:00:00", "rank": 1}, {"player_name": "Cam Smith", "team": "HOU", "exit_velo": 110.9, "distance": 462, "angle": 29, "game_date": "2026-04-06 00:00:00", "rank": 2}, {"player_name": "Kyle Schwarber", "team": "PHI", "exit_velo": 110.7, "distance": 460, "angle": 29, "game_date": "2026-04-03 00:00:00", "rank": 3}, {"player_name": "Jordan Walker", "team": "STL", "exit_velo": 113.7, "distance": 459, "angle": 22, "game_date": "2026-04-04 00:00:00", "rank": 4}, {"player_name": "Aaron Judge", "team": "NYY", "exit_velo": 116.2, "distance": 456, "angle": 26, "game_date": "2026-04-13 00:00:00", "rank": 5}, {"player_name": "Brandon Marsh", "team": "PHI", "exit_velo": 106.1, "distance": 454, "angle": 29, "game_date": "2026-04-03 00:00:00", "rank": 6}, {"player_name": "Kyle Manzardo", "team": "CLE", "exit_velo": 108.4, "distance": 454, "angle": 31, "game_date": "2026-04-10 00:00:00", "rank": 7}, {"player_name": "Max Muncy", "team": "LAD", "exit_velo": 107.9, "distance": 452, "angle": 25, "game_date": "2026-04-17 00:00:00", "rank": 8}, {"player_name": "Kyle Karros", "team": "COL", "exit_velo": 105.9, "distance": 448, "angle": 30, "game_date": "2026-04-19 00:00:00", "rank": 9}, {"player_name": "Mike Trout", "team": "LAA", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "rank": 10}]};
 
 /* ── TEAM TABLE ── */
 function sortTeams(by) {
@@ -444,8 +453,9 @@ sortTeams('week');
 })();
 
 /* ── HR CARDS ── */
-function renderCards(containerId, rows, metricKey, metricLabel, accentClass) {
+function renderCards(containerId, rows, metricKey, metricLabel) {
   const container = document.getElementById(containerId);
+  container.innerHTML = '';
   rows.forEach(row => {
     const card = document.createElement('div');
     card.className = containerId === 'dist-cards' ? 'hr-card blue-card' : 'hr-card gold-card';
@@ -474,8 +484,131 @@ function renderCards(containerId, rows, metricKey, metricLabel, accentClass) {
   });
 }
 
-renderCards('ev-cards',   DATA.top_ev,   'exit_velo', 'Exit Velocity', 'accent');
-renderCards('dist-cards', DATA.top_dist, 'distance',  'Distance',      'accent');
+/* ── TOGGLE HELPERS ── */
+const BTN_ON  = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;';
+const BTN_OFF = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid rgba(138,160,181,0.18);background:transparent;color:#8AA0B5;cursor:pointer;';
+
+function switchEV(mode) {
+  renderCards('ev-cards', mode === 'week' ? DATA.top_ev_week : DATA.top_ev_season, 'exit_velo', 'Exit Velocity');
+  document.getElementById('ev-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
+  document.getElementById('ev-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
+}
+
+function switchDist(mode) {
+  const rows = mode === 'week' ? DATA.top_dist_week : DATA.top_dist_season;
+  renderCards('dist-cards', rows, 'distance', 'Distance');
+  drawSpray(rows);
+  document.getElementById('dist-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
+  document.getElementById('dist-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
+}
+
+/* ── SPRAY CHART ── */
+function drawSpray(rows) {
+  const canvas = document.getElementById('spray-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Field dimensions: home plate at bottom-center
+  const HX = W / 2, HY = H - 30;
+  const SCALE = 0.72; // px per foot at 400ft baseline
+
+  // Draw field grass
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(HX, HY);
+  ctx.lineTo(HX - 200, HY - 200);
+  ctx.quadraticCurveTo(HX, HY - 380, HX + 200, HY - 200);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(13,45,20,0.7)';
+  ctx.fill();
+  ctx.restore();
+
+  // Foul lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(HX, HY);
+  ctx.lineTo(HX - 200, HY - 200);
+  ctx.moveTo(HX, HY);
+  ctx.lineTo(HX + 200, HY - 200);
+  ctx.stroke();
+
+  // Distance arcs (330, 380, 430ft)
+  [330, 380, 430].forEach(ft => {
+    const r = ft * SCALE;
+    ctx.beginPath();
+    ctx.arc(HX, HY, r, -Math.PI * 0.85, -Math.PI * 0.15);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '9px IBM Plex Mono, monospace';
+    ctx.fillText(ft + 'ft', HX + r * 0.68 + 4, HY - r * 0.72);
+  });
+
+  // Infield dirt circle
+  ctx.beginPath();
+  ctx.arc(HX, HY - 90 * SCALE, 95 * SCALE * 0.5, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(180,130,80,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Home plate marker
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillRect(HX - 3, HY - 3, 6, 6);
+
+  // Color ramp by rank (gold → blue)
+  const colors = ['#F5A623','#E8922A','#DA8030','#CC6E36','#BE5C3C',
+                  '#B04A42','#A23848','#94264E','#861454','#78025A'];
+
+  // Plot each HR
+  const maxDist = Math.max(...rows.map(r => +r.distance || 0));
+
+  rows.forEach((row, i) => {
+    const dist = +row.distance || 0;
+    if (!dist) return;
+    // Use launch angle as spray angle — map 0° (center) ± to left/right
+    // Statcast spray_angle not available so estimate from hit_direction
+    // Use rank index to spread evenly across ~160° arc if no angle data
+    const totalRows = rows.length;
+    const spreadDeg = -80 + (i / Math.max(totalRows - 1, 1)) * 160; // -80° to +80°
+    const rad = (spreadDeg - 90) * Math.PI / 180; // rotate so 0° = center field
+    const px = dist * SCALE;
+    const x = HX + Math.cos(rad) * px;
+    const y = HY + Math.sin(rad) * px;
+
+    // Arc from home plate to landing
+    ctx.beginPath();
+    ctx.moveTo(HX, HY);
+    const cpx = (HX + x) / 2 + Math.sin(rad) * 30;
+    const cpy = (HY + y) / 2 - Math.abs(Math.cos(rad)) * 40;
+    ctx.quadraticCurveTo(cpx, cpy, x, y);
+    ctx.strokeStyle = colors[i] || '#888';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Landing dot
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i] || '#888';
+    ctx.fill();
+
+    // Rank label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 7px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(i + 1, x, y + 3);
+    ctx.textAlign = 'left';
+  });
+}
+
+/* ── INIT ── */
+switchEV('week');
+switchDist('week');
 </script>
 </body>
 </html>
