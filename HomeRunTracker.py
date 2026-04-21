@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Weekly MLB Home Run Tracker
 Generates an HTML report using pybaseball + Statcast data.
@@ -33,7 +34,7 @@ def parse_args():
     parser.add_argument("--start", default=None, help="Start date YYYY-MM-DD (default: 7 days ago)")
     parser.add_argument("--end",   default=None, help="End date YYYY-MM-DD (default: today)")
     parser.add_argument("--season", type=int, default=None, help="Pull full season-to-date instead")
-    parser.add_argument("--out", default="index.html", help="Output HTML filename")
+    parser.add_argument("--out", default="/Users/michaelharman/Projects/Home Run Tracker/index.html", help="Output HTML filename")
     return parser.parse_args()
 
 
@@ -413,6 +414,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     background: var(--red);
   }
   .hr-card.gold-card::after { background: var(--gold); }
+  .hr-card.blue-card::after { background: #2C7BE5; }
   .hr-card-rank {
     font-family: 'Oswald', sans-serif;
     font-size: 11px;
@@ -500,6 +502,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="section-header">
       <div class="section-title">Home Runs by Team</div>
       <div class="section-badge">Last 7 Days + Season</div>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <button id="sort-week" onclick="sortTeams('week')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
+        <button id="sort-season" onclick="sortTeams('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season Total</button>
+      </div>
     </div>
     <div class="tbl-wrap">
       <table id="team-table">
@@ -537,7 +543,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   </div>
 
   <!-- EV + DISTANCE CARDS -->
-  <div class="two-col">
+  <div class="two-col" style="border-top:1px solid var(--border);padding-top:2.5rem;">
     <div class="section">
       <div class="section-header">
         <div class="section-title">Top Exit Velocity</div>
@@ -546,7 +552,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <div class="hr-cards" id="ev-cards"></div>
     </div>
 
-    <div class="section">
+    <div class="section" style="border-left:1px solid var(--border);padding-left:2rem;">
       <div class="section-header">
         <div class="section-title">Longest Home Runs</div>
         <div class="section-badge">HRs Last 7 Days</div>
@@ -563,11 +569,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 const DATA = {{DATA_JSON}};
 
 /* ── TEAM TABLE ── */
-(function() {
-  const maxWeek   = Math.max(...DATA.team_combined.map(r => r.hr_week   || 0));
-  const maxSeason = Math.max(...DATA.team_combined.map(r => r.hr_season || 0));
+function sortTeams(by) {
+  const sorted = [...DATA.team_combined].sort((a, b) =>
+    by === 'week' ? b.hr_week - a.hr_week : b.hr_season - a.hr_season
+  );
+  const maxWeek   = Math.max(...sorted.map(r => r.hr_week   || 0));
+  const maxSeason = Math.max(...sorted.map(r => r.hr_season || 0));
   const tbody = document.getElementById('team-tbody');
-  DATA.team_combined.forEach(row => {
+  tbody.innerHTML = '';
+  sorted.forEach(row => {
     const pctW = maxWeek   ? Math.round((row.hr_week   / maxWeek)   * 100) : 0;
     const pctS = maxSeason ? Math.round((row.hr_season / maxSeason) * 100) : 0;
     const tr = document.createElement('tr');
@@ -588,7 +598,10 @@ const DATA = {{DATA_JSON}};
     `;
     tbody.appendChild(tr);
   });
-})();
+  document.getElementById('sort-week').style.cssText   = by === 'week'   ? 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;' : 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;';
+  document.getElementById('sort-season').style.cssText = by === 'season' ? 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;' : 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;';
+}
+sortTeams('week');
 
 /* ── PLAYER TABLE ── */
 (function() {
@@ -617,7 +630,7 @@ function renderCards(containerId, rows, metricKey, metricLabel, accentClass) {
   const container = document.getElementById(containerId);
   rows.forEach(row => {
     const card = document.createElement('div');
-    card.className = `hr-card ${accentClass === 'accent' ? 'gold-card' : ''}`;
+    card.className = containerId === 'dist-cards' ? 'hr-card blue-card' : 'hr-card gold-card';
     const ev   = row.exit_velo !== '—' ? row.exit_velo + ' mph' : '—';
     const dist = row.distance  !== '—' ? row.distance  + ' ft'  : '—';
     const ang  = row.angle     !== '—' ? row.angle     + '°'    : '—';
