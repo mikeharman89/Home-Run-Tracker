@@ -2,7 +2,7 @@
 
 A weekly MLB home run report auto-generated daily via GitHub Actions and published to GitHub Pages.
 
-**Live report →** `https://mikeharman89.github.io/home-run-tracker/`
+**Live report →** `https://mikeharman89.github.io/Home-Run-Tracker/`
 
 ## What it tracks
 - Home runs by team (last 7 days + season running total)
