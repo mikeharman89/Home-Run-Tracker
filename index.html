@@ -198,7 +198,7 @@
     background: var(--navy3);
     border-radius: 3px;
     overflow: hidden;
-    min-width: 60px;
+    min-width: 40px;
   }
   .bar-fill {
     height: 100%;
@@ -379,7 +379,7 @@
 <div class="hero">
   <div class="hero-inner">
     <h1 class="hero-title">Home Run <span>Tracker</span></h1>
-    <div class="hero-meta">Generated Apr 21, 2026 19:23</div>
+    <div class="hero-meta">Generated Apr 21, 2026 7:34 PM EDT</div>
     <div class="stats-row">
       <div class="stat-pill">
         <div class="stat-pill-label">HRs Last 7 Days</div>
@@ -419,8 +419,8 @@
         <thead>
           <tr>
             <th>Team</th>
-            <th style="min-width:180px">Last 7 Days</th>
-            <th style="min-width:180px">Season Total</th>
+            <th style="min-width:120px">Last 7 Days</th>
+            <th style="min-width:120px">Season Total</th>
           </tr>
         </thead>
         <tbody id="team-tbody"></tbody>
@@ -634,7 +634,7 @@ const BTN_ON  = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;paddi
 const BTN_OFF = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid rgba(138,160,181,0.18);background:transparent;color:#8AA0B5;cursor:pointer;';
 
 function switchEV(mode) {
-  renderCards('ev-cards', mode === 'week' ? DATA.top_ev_week : DATA.top_ev_season, 'exit_velo', 'Exit Velocity');
+  renderCards('ev-cards', mode === 'week' ? DATA.top_ev_week : DATA.top_ev_season, 'exit_velo', 'Exit Velo');
   document.getElementById('ev-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
   document.getElementById('ev-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
 }
