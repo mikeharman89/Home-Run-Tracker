@@ -557,7 +557,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="section">
       <div class="section-header">
         <div class="section-title">Top Exit Velocity</div>
-        <div class="section-badge">HRs Last 7 Days</div>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button id="ev-btn-week"   onclick="switchEV('week')"   style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
+          <button id="ev-btn-season" onclick="switchEV('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season</button>
+        </div>
       </div>
       <div class="hr-cards" id="ev-cards"></div>
     </div>
@@ -565,7 +568,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="section" style="border-left:1px solid var(--border);padding-left:2rem;">
       <div class="section-header">
         <div class="section-title">Longest Home Runs</div>
-        <div class="section-badge">HRs Last 7 Days</div>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button id="dist-btn-week"   onclick="switchDist('week')"   style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
+          <button id="dist-btn-season" onclick="switchDist('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season</button>
+        </div>
+      </div>
+      <div style="margin-bottom:1.25rem;">
+        <canvas id="spray-chart" width="480" height="380" style="width:100%;max-width:480px;display:block;"></canvas>
       </div>
       <div class="hr-cards" id="dist-cards"></div>
     </div>
@@ -636,8 +645,9 @@ sortTeams('week');
 })();
 
 /* ── HR CARDS ── */
-function renderCards(containerId, rows, metricKey, metricLabel, accentClass) {
+function renderCards(containerId, rows, metricKey, metricLabel) {
   const container = document.getElementById(containerId);
+  container.innerHTML = '';
   rows.forEach(row => {
     const card = document.createElement('div');
     card.className = containerId === 'dist-cards' ? 'hr-card blue-card' : 'hr-card gold-card';
@@ -666,8 +676,131 @@ function renderCards(containerId, rows, metricKey, metricLabel, accentClass) {
   });
 }
 
-renderCards('ev-cards',   DATA.top_ev,   'exit_velo', 'Exit Velocity', 'accent');
-renderCards('dist-cards', DATA.top_dist, 'distance',  'Distance',      'accent');
+/* ── TOGGLE HELPERS ── */
+const BTN_ON  = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;';
+const BTN_OFF = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid rgba(138,160,181,0.18);background:transparent;color:#8AA0B5;cursor:pointer;';
+
+function switchEV(mode) {
+  renderCards('ev-cards', mode === 'week' ? DATA.top_ev_week : DATA.top_ev_season, 'exit_velo', 'Exit Velocity');
+  document.getElementById('ev-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
+  document.getElementById('ev-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
+}
+
+function switchDist(mode) {
+  const rows = mode === 'week' ? DATA.top_dist_week : DATA.top_dist_season;
+  renderCards('dist-cards', rows, 'distance', 'Distance');
+  drawSpray(rows);
+  document.getElementById('dist-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
+  document.getElementById('dist-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
+}
+
+/* ── SPRAY CHART ── */
+function drawSpray(rows) {
+  const canvas = document.getElementById('spray-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Field dimensions: home plate at bottom-center
+  const HX = W / 2, HY = H - 30;
+  const SCALE = 0.72; // px per foot at 400ft baseline
+
+  // Draw field grass
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(HX, HY);
+  ctx.lineTo(HX - 200, HY - 200);
+  ctx.quadraticCurveTo(HX, HY - 380, HX + 200, HY - 200);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(13,45,20,0.7)';
+  ctx.fill();
+  ctx.restore();
+
+  // Foul lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(HX, HY);
+  ctx.lineTo(HX - 200, HY - 200);
+  ctx.moveTo(HX, HY);
+  ctx.lineTo(HX + 200, HY - 200);
+  ctx.stroke();
+
+  // Distance arcs (330, 380, 430ft)
+  [330, 380, 430].forEach(ft => {
+    const r = ft * SCALE;
+    ctx.beginPath();
+    ctx.arc(HX, HY, r, -Math.PI * 0.85, -Math.PI * 0.15);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '9px IBM Plex Mono, monospace';
+    ctx.fillText(ft + 'ft', HX + r * 0.68 + 4, HY - r * 0.72);
+  });
+
+  // Infield dirt circle
+  ctx.beginPath();
+  ctx.arc(HX, HY - 90 * SCALE, 95 * SCALE * 0.5, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(180,130,80,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Home plate marker
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillRect(HX - 3, HY - 3, 6, 6);
+
+  // Color ramp by rank (gold → blue)
+  const colors = ['#F5A623','#E8922A','#DA8030','#CC6E36','#BE5C3C',
+                  '#B04A42','#A23848','#94264E','#861454','#78025A'];
+
+  // Plot each HR
+  const maxDist = Math.max(...rows.map(r => +r.distance || 0));
+
+  rows.forEach((row, i) => {
+    const dist = +row.distance || 0;
+    if (!dist) return;
+    // Use launch angle as spray angle — map 0° (center) ± to left/right
+    // Statcast spray_angle not available so estimate from hit_direction
+    // Use rank index to spread evenly across ~160° arc if no angle data
+    const totalRows = rows.length;
+    const spreadDeg = -80 + (i / Math.max(totalRows - 1, 1)) * 160; // -80° to +80°
+    const rad = (spreadDeg - 90) * Math.PI / 180; // rotate so 0° = center field
+    const px = dist * SCALE;
+    const x = HX + Math.cos(rad) * px;
+    const y = HY + Math.sin(rad) * px;
+
+    // Arc from home plate to landing
+    ctx.beginPath();
+    ctx.moveTo(HX, HY);
+    const cpx = (HX + x) / 2 + Math.sin(rad) * 30;
+    const cpy = (HY + y) / 2 - Math.abs(Math.cos(rad)) * 40;
+    ctx.quadraticCurveTo(cpx, cpy, x, y);
+    ctx.strokeStyle = colors[i] || '#888';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Landing dot
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i] || '#888';
+    ctx.fill();
+
+    // Rank label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 7px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(i + 1, x, y + 3);
+    ctx.textAlign = 'left';
+  });
+}
+
+/* ── INIT ── */
+switchEV('week');
+switchDist('week');
 </script>
 </body>
 </html>
@@ -690,18 +823,42 @@ def main():
     tc["hr_season"] = tc["hr_season"].astype(int)
     tc = tc.sort_values("hr_week", ascending=False)
 
-    pl   = player_leaderboard(hrs)
-    ev   = top_exit_velocity(hrs)
-    dist = top_distance(hrs)
+    pl        = player_leaderboard(hrs)
+    ev_week   = top_exit_velocity(hrs, top_n=10)
+    dist_week = top_distance(hrs, top_n=10)
 
-    top_ev_val   = round(ev["exit_velo"].iloc[0], 1)  if not ev.empty   else "—"
-    top_dist_val = int(dist["distance"].iloc[0])       if not dist.empty else "—"
+    # Season EV/distance — reuse season statcast pull
+    year = datetime.strptime(end, "%Y-%m-%d").year
+    season_start = f"{year}-03-26"
+    print("  Fetching season EV/distance data …")
+    df_szn = statcast(start_dt=season_start, end_dt=end)
+    hrs_szn = df_szn[
+        (df_szn["events"] == "home_run") &
+        (df_szn["game_type"] == "R")
+    ].copy()
+    hrs_szn["batting_team"] = hrs_szn.apply(
+        lambda r: r["home_team"] if r["inning_topbot"] == "Bot" else r["away_team"], axis=1
+    )
+    if "batter_name" in hrs_szn.columns:
+        pass
+    elif "des" in hrs_szn.columns:
+        hrs_szn["batter_name"] = hrs_szn["des"].str.extract(r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))")[0].str.strip()
+    else:
+        hrs_szn["batter_name"] = hrs_szn["player_name"]
+
+    ev_season   = top_exit_velocity(hrs_szn, top_n=10)
+    dist_season = top_distance(hrs_szn, top_n=10)
+
+    top_ev_val   = round(ev_week["exit_velo"].iloc[0], 1)  if not ev_week.empty   else "—"
+    top_dist_val = int(dist_week["distance"].iloc[0])       if not dist_week.empty else "—"
 
     data_payload = {
         "team_combined":   df_to_list(tc),
         "player_leaders":  df_to_list(pl),
-        "top_ev":          df_to_list(ev),
-        "top_dist":        df_to_list(dist),
+        "top_ev_week":     df_to_list(ev_week),
+        "top_ev_season":   df_to_list(ev_season),
+        "top_dist_week":   df_to_list(dist_week),
+        "top_dist_season": df_to_list(dist_season),
     }
 
     html = (HTML_TEMPLATE
