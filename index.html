@@ -232,6 +232,7 @@
     background: var(--red);
   }
   .hr-card.gold-card::after { background: var(--gold); }
+  .hr-card.blue-card::after { background: #2C7BE5; }
   .hr-card-rank {
     font-family: 'Oswald', sans-serif;
     font-size: 11px;
@@ -290,7 +291,7 @@
   <div class="hero-inner">
     <div class="hero-eyebrow">MLB Statcast Weekly Digest</div>
     <h1 class="hero-title">Home Run <span>Tracker</span></h1>
-    <div class="hero-meta">2026-04-13 → 2026-04-19 &nbsp;·&nbsp; Generated Apr 20, 2026 23:31</div>
+    <div class="hero-meta">2026-04-13 → 2026-04-19 &nbsp;·&nbsp; Generated Apr 20, 2026 23:40</div>
     <div class="stats-row">
       <div class="stat-pill">
         <div class="stat-pill-label">HRs Last 7 Days</div>
@@ -319,6 +320,10 @@
     <div class="section-header">
       <div class="section-title">Home Runs by Team</div>
       <div class="section-badge">Last 7 Days + Season</div>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <button id="sort-week" onclick="sortTeams('week')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
+        <button id="sort-season" onclick="sortTeams('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season Total</button>
+      </div>
     </div>
     <div class="tbl-wrap">
       <table id="team-table">
@@ -356,7 +361,7 @@
   </div>
 
   <!-- EV + DISTANCE CARDS -->
-  <div class="two-col">
+  <div class="two-col" style="border-top:1px solid var(--border);padding-top:2.5rem;">
     <div class="section">
       <div class="section-header">
         <div class="section-title">Top Exit Velocity</div>
@@ -365,7 +370,7 @@
       <div class="hr-cards" id="ev-cards"></div>
     </div>
 
-    <div class="section">
+    <div class="section" style="border-left:1px solid var(--border);padding-left:2rem;">
       <div class="section-header">
         <div class="section-title">Longest Home Runs</div>
         <div class="section-badge">HRs Last 7 Days</div>
@@ -382,11 +387,15 @@
 const DATA = {"team_combined": [{"team": "NYY", "hr_week": 33, "hr_season": 41}, {"team": "ATH", "hr_week": 19, "hr_season": 28}, {"team": "HOU", "hr_week": 17, "hr_season": 38}, {"team": "PHI", "hr_week": 16, "hr_season": 34}, {"team": "PIT", "hr_week": 15, "hr_season": 20}, {"team": "BAL", "hr_week": 11, "hr_season": 29}, {"team": "MIN", "hr_week": 11, "hr_season": 17}, {"team": "CLE", "hr_week": 10, "hr_season": 22}, {"team": "STL", "hr_week": 8, "hr_season": 21}, {"team": "SEA", "hr_week": 8, "hr_season": 28}, {"team": "WSH", "hr_week": 8, "hr_season": 31}, {"team": "CWS", "hr_week": 8, "hr_season": 14}, {"team": "CIN", "hr_week": 7, "hr_season": 29}, {"team": "CHC", "hr_week": 7, "hr_season": 26}, {"team": "COL", "hr_week": 6, "hr_season": 19}, {"team": "LAD", "hr_week": 6, "hr_season": 30}, {"team": "ATL", "hr_week": 6, "hr_season": 23}, {"team": "AZ", "hr_week": 5, "hr_season": 18}, {"team": "BOS", "hr_week": 4, "hr_season": 9}, {"team": "DET", "hr_week": 4, "hr_season": 17}, {"team": "MIL", "hr_week": 4, "hr_season": 30}, {"team": "SD", "hr_week": 2, "hr_season": 22}, {"team": "LAA", "hr_week": 2, "hr_season": 12}, {"team": "MIA", "hr_week": 2, "hr_season": 17}, {"team": "KC", "hr_week": 0, "hr_season": 17}, {"team": "NYM", "hr_week": 0, "hr_season": 15}, {"team": "SF", "hr_week": 0, "hr_season": 10}, {"team": "TB", "hr_week": 0, "hr_season": 11}, {"team": "TEX", "hr_week": 0, "hr_season": 7}, {"team": "TOR", "hr_week": 0, "hr_season": 30}], "player_leaders": [{"player_name": "Aaron Judge", "hr_week": 5, "team": "NYY"}, {"player_name": "Mike Trout", "hr_week": 5, "team": "NYY"}, {"player_name": "Ben Rice", "hr_week": 4, "team": "NYY"}, {"player_name": "Munetaka Murakami", "hr_week": 4, "team": "ATH"}, {"player_name": "Jeremiah Jackson", "hr_week": 4, "team": "BAL"}, {"player_name": "Yordan Alvarez", "hr_week": 4, "team": "HOU"}, {"player_name": "Jake Burger", "hr_week": 3, "team": "ATH"}, {"player_name": "Trent Grisham", "hr_week": 3, "team": "NYY"}, {"player_name": "Austin Riley", "hr_week": 3, "team": "PHI"}, {"player_name": "Sal Stewart", "hr_week": 3, "team": "CIN"}], "top_ev": [{"player_name": "Aaron Judge", "team": "NYY", "exit_velo": 116.2, "distance": 456, "angle": 26, "game_date": "2026-04-13 00:00:00", "home_score": 0, "away_score": 0, "rank": 1}, {"player_name": "Yordan Alvarez", "team": "HOU", "exit_velo": 116.2, "distance": 421, "angle": 28, "game_date": "2026-04-18 00:00:00", "home_score": 0, "away_score": 2, "rank": 2}, {"player_name": "Nick Kurtz", "team": "ATH", "exit_velo": 115.3, "distance": 386, "angle": 22, "game_date": "2026-04-18 00:00:00", "home_score": 4, "away_score": 6, "rank": 3}, {"player_name": "Mike Trout", "team": "NYY", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "home_score": 4, "away_score": 6, "rank": 4}, {"player_name": "Logan O'Hoppe", "team": "NYY", "exit_velo": 114.3, "distance": 427, "angle": 24, "game_date": "2026-04-15 00:00:00", "home_score": 3, "away_score": 1, "rank": 5}, {"player_name": "Munetaka Murakami", "team": "ATH", "exit_velo": 114.1, "distance": 431, "angle": 33, "game_date": "2026-04-17 00:00:00", "home_score": 1, "away_score": 5, "rank": 6}, {"player_name": "Munetaka Murakami", "team": "ATH", "exit_velo": 114.1, "distance": 425, "angle": 35, "game_date": "2026-04-19 00:00:00", "home_score": 1, "away_score": 4, "rank": 7}, {"player_name": "Jake Burger", "team": "ATH", "exit_velo": 113.6, "distance": 417, "angle": 21, "game_date": "2026-04-13 00:00:00", "home_score": 0, "away_score": 0, "rank": 8}, {"player_name": "Luke Raley", "team": "SD", "exit_velo": 113.2, "distance": 434, "angle": 27, "game_date": "2026-04-15 00:00:00", "home_score": 0, "away_score": 4, "rank": 9}, {"player_name": "Luke Raley", "team": "SEA", "exit_velo": 112.7, "distance": 381, "angle": 39, "game_date": "2026-04-18 00:00:00", "home_score": 3, "away_score": 1, "rank": 10}], "top_dist": [{"player_name": "Shea Langeliers", "team": "ATH", "exit_velo": 112.4, "distance": 467, "angle": 28, "game_date": "2026-04-15 00:00:00", "rank": 1}, {"player_name": "Aaron Judge", "team": "NYY", "exit_velo": 116.2, "distance": 456, "angle": 26, "game_date": "2026-04-13 00:00:00", "rank": 2}, {"player_name": "Max Muncy", "team": "COL", "exit_velo": 107.9, "distance": 452, "angle": 25, "game_date": "2026-04-17 00:00:00", "rank": 3}, {"player_name": "Kyle Karros", "team": "COL", "exit_velo": 105.9, "distance": 448, "angle": 30, "game_date": "2026-04-19 00:00:00", "rank": 4}, {"player_name": "Giancarlo Stanton", "team": "NYY", "exit_velo": 111.1, "distance": 446, "angle": 27, "game_date": "2026-04-16 00:00:00", "rank": 5}, {"player_name": "Mike Trout", "team": "NYY", "exit_velo": 114.6, "distance": 446, "angle": 31, "game_date": "2026-04-16 00:00:00", "rank": 6}, {"player_name": "Jo Adell", "team": "NYY", "exit_velo": 110.5, "distance": 445, "angle": 21, "game_date": "2026-04-14 00:00:00", "rank": 7}, {"player_name": "Mike Trout", "team": "NYY", "exit_velo": 109.2, "distance": 445, "angle": 25, "game_date": "2026-04-13 00:00:00", "rank": 8}, {"player_name": "Ketel Marte", "team": "BAL", "exit_velo": 108.6, "distance": 443, "angle": 28, "game_date": "2026-04-13 00:00:00", "rank": 9}, {"player_name": "Edmundo Sosa", "team": "PHI", "exit_velo": 105.7, "distance": 442, "angle": 28, "game_date": "2026-04-14 00:00:00", "rank": 10}]};
 
 /* ── TEAM TABLE ── */
-(function() {
-  const maxWeek   = Math.max(...DATA.team_combined.map(r => r.hr_week   || 0));
-  const maxSeason = Math.max(...DATA.team_combined.map(r => r.hr_season || 0));
+function sortTeams(by) {
+  const sorted = [...DATA.team_combined].sort((a, b) =>
+    by === 'week' ? b.hr_week - a.hr_week : b.hr_season - a.hr_season
+  );
+  const maxWeek   = Math.max(...sorted.map(r => r.hr_week   || 0));
+  const maxSeason = Math.max(...sorted.map(r => r.hr_season || 0));
   const tbody = document.getElementById('team-tbody');
-  DATA.team_combined.forEach(row => {
+  tbody.innerHTML = '';
+  sorted.forEach(row => {
     const pctW = maxWeek   ? Math.round((row.hr_week   / maxWeek)   * 100) : 0;
     const pctS = maxSeason ? Math.round((row.hr_season / maxSeason) * 100) : 0;
     const tr = document.createElement('tr');
@@ -407,7 +416,10 @@ const DATA = {"team_combined": [{"team": "NYY", "hr_week": 33, "hr_season": 41},
     `;
     tbody.appendChild(tr);
   });
-})();
+  document.getElementById('sort-week').style.cssText   = by === 'week'   ? 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;' : 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;';
+  document.getElementById('sort-season').style.cssText = by === 'season' ? 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;' : 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;';
+}
+sortTeams('week');
 
 /* ── PLAYER TABLE ── */
 (function() {
@@ -436,7 +448,7 @@ function renderCards(containerId, rows, metricKey, metricLabel, accentClass) {
   const container = document.getElementById(containerId);
   rows.forEach(row => {
     const card = document.createElement('div');
-    card.className = `hr-card ${accentClass === 'accent' ? 'gold-card' : ''}`;
+    card.className = containerId === 'dist-cards' ? 'hr-card blue-card' : 'hr-card gold-card';
     const ev   = row.exit_velo !== '—' ? row.exit_velo + ' mph' : '—';
     const dist = row.distance  !== '—' ? row.distance  + ' ft'  : '—';
     const ang  = row.angle     !== '—' ? row.angle     + '°'    : '—';
