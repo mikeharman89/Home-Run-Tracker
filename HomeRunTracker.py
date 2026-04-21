@@ -110,7 +110,11 @@ def team_season(start, end):
 
 def player_leaderboard(hrs, top_n=10):
     """Top N players by home runs in the window, with season running total."""
-    year = hrs["game_date"].max().strftime("%Y") if not hrs.empty else str(datetime.today().year)
+    if hrs.empty:
+        year = str(datetime.today().year)
+    else:
+        gd = hrs["game_date"].max()
+        year = gd[:4] if isinstance(gd, str) else gd.strftime("%Y")
     tbl = (
         hrs.groupby("batter_name")
         .agg(
