@@ -390,7 +390,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     background: var(--navy3);
     border-radius: 3px;
     overflow: hidden;
-    min-width: 60px;
+    min-width: 40px;
   }
   .bar-fill {
     height: 100%;
@@ -611,8 +611,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <thead>
           <tr>
             <th>Team</th>
-            <th style="min-width:180px">Last 7 Days</th>
-            <th style="min-width:180px">Season Total</th>
+            <th style="min-width:120px">Last 7 Days</th>
+            <th style="min-width:120px">Season Total</th>
           </tr>
         </thead>
         <tbody id="team-tbody"></tbody>
@@ -826,7 +826,7 @@ const BTN_ON  = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;paddi
 const BTN_OFF = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid rgba(138,160,181,0.18);background:transparent;color:#8AA0B5;cursor:pointer;';
 
 function switchEV(mode) {
-  renderCards('ev-cards', mode === 'week' ? DATA.top_ev_week : DATA.top_ev_season, 'exit_velo', 'Exit Velocity');
+  renderCards('ev-cards', mode === 'week' ? DATA.top_ev_week : DATA.top_ev_season, 'exit_velo', 'Exit Velo');
   document.getElementById('ev-btn-week').style.cssText   = mode === 'week'   ? BTN_ON : BTN_OFF;
   document.getElementById('ev-btn-season').style.cssText = mode === 'season' ? BTN_ON : BTN_OFF;
 }
@@ -1117,7 +1117,7 @@ def main():
 
     html = (HTML_TEMPLATE
         .replace("{{WEEK_LABEL}}",    week_label)
-        .replace("{{GENERATED}}",     datetime.now().strftime("%b %d, %Y %H:%M"))
+        .replace("{{GENERATED}}",     (lambda now: now.strftime("%b %d, %Y") + now.strftime(" %I:%M %p ").lstrip("0").replace(" 0", " ") + ("EDT" if (3 <= now.month <= 10) else "EST"))(datetime.now()))
         .replace("{{TOTAL_WEEK}}",    str(len(hrs)))
         .replace("{{TOTAL_SEASON}}",  str(int(tc["hr_season"].sum())))
         .replace("{{TOP_EV}}",        str(top_ev_val))
