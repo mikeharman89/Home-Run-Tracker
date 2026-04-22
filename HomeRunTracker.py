@@ -759,7 +759,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </div>
 
 <!-- <>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; {{WEEK_LABEL}}</footer> -->
-<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; {{WEEK_LABEL}} &nbsp;·&nbsp; Created by Mike Harman</footer>
+<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; Last 7 Days: {{WEEK_LABEL}} &nbsp;·&nbsp; Created by Mike Harman</footer>
 
 <script>
 const DATA = {{DATA_JSON}};
