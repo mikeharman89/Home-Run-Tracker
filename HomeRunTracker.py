@@ -58,18 +58,36 @@ def fetch_home_runs(start, end):
         (df["events"] == "home_run") &
         (df["game_type"] == "R")
     ].copy()
-    # In Statcast, player_name = pitcher. Batter name is in the description field
-    # or we build it from batter_name columns. Use des field to extract batter name.
-    # Most reliable: use batting_team side and the batter field with a name lookup.
-    # pybaseball attaches batter name via the 'batter_name' col when available,
-    # otherwise fall back to parsing the description.
-    if "batter_name" in hrs.columns:
-        hrs["batter_name"] = hrs["batter_name"]
-    elif "des" in hrs.columns:
-        # description starts with batter name e.g. "Judge homers (3) on a fly ball..."
-        hrs["batter_name"] = hrs["des"].str.extract(r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))")[0].str.strip()
+
+    # In Statcast, player_name = pitcher. Get batter name from des field first,
+    # then confirm/fill gaps using playerid_reverse_lookup on batter IDs.
+    if "des" in hrs.columns:
+        hrs["batter_name"] = hrs["des"].str.extract(
+            r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))"
+        )[0].str.strip()
     else:
-        hrs["batter_name"] = hrs["player_name"]  # fallback
+        hrs["batter_name"] = None
+
+    # Fill any missing names via ID lookup
+    missing_mask = hrs["batter_name"].isna() | (hrs["batter_name"] == "")
+    if missing_mask.any() and "batter" in hrs.columns:
+        try:
+            from pybaseball import playerid_reverse_lookup
+            missing_ids = hrs.loc[missing_mask, "batter"].dropna().unique().tolist()
+            if missing_ids:
+                lookup = playerid_reverse_lookup(missing_ids, key_type="mlbam")
+                lookup["full_name"] = lookup["name_first"] + " " + lookup["name_last"]
+                id_to_name = dict(zip(lookup["key_mlbam"], lookup["full_name"]))
+                hrs.loc[missing_mask, "batter_name"] = hrs.loc[missing_mask, "batter"].map(id_to_name)
+        except Exception as e:
+            print(f"  Warning: playerid_reverse_lookup failed ({e}), using fallback")
+
+    # Final fallback — should rarely fire
+    still_missing = hrs["batter_name"].isna() | (hrs["batter_name"] == "")
+    hrs.loc[still_missing, "batter_name"] = hrs.loc[still_missing, "batter"].astype(str).apply(
+        lambda x: f"Player {x}"
+    )
+
     hrs["batting_team"] = hrs.apply(
         lambda r: r["home_team"] if r["inning_topbot"] == "Bot" else r["away_team"], axis=1
     )
@@ -758,8 +776,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 </div>
 
-<!-- <>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; {{WEEK_LABEL}}</footer> -->
-<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; Last 7 Days: {{WEEK_LABEL}} &nbsp;·&nbsp; Created by Mike Harman</footer>
+<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; {{WEEK_LABEL}}</footer>
 
 <script>
 const DATA = {{DATA_JSON}};
