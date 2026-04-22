@@ -1,4 +1,4 @@
-# MLB Home Run Tracker
+# [MLB Home Run Tracker](https://mikeharman89.github.io/Home-Run-Tracker/)
 
 A weekly MLB home run report auto-generated daily via GitHub Actions and published to GitHub Pages.
 
