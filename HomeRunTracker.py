@@ -64,7 +64,7 @@ def fetch_home_runs(start, end):
     if "des" in hrs.columns:
         hrs["batter_name"] = hrs["des"].str.extract(
             r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))"
-        )[0].str.strip()
+        )[0].str.strip().str.title()
     else:
         hrs["batter_name"] = None
 
@@ -1238,7 +1238,7 @@ def main():
     if "des" in hrs_szn.columns:
         hrs_szn["batter_name"] = hrs_szn["des"].str.extract(
             r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))"
-        )[0].str.strip()
+        )[0].str.strip().str.title()
     else:
         hrs_szn["batter_name"] = None
 
