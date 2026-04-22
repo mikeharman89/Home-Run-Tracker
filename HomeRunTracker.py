@@ -135,6 +135,27 @@ def player_leaderboard(hrs, top_n=10):
     return tbl
 
 
+def team_hr_breakdown(hrs, hrs_szn):
+    """Per-player HR counts by team for both last-7-days and season windows."""
+    breakdown = {}
+    for df, key in [(hrs, "week"), (hrs_szn, "season")]:
+        grp = (
+            df.groupby(["batting_team", "batter_name"])["events"]
+            .count()
+            .reset_index()
+            .rename(columns={"batting_team": "team", "batter_name": "player", "events": "hrs"})
+            .sort_values(["team", "hrs"], ascending=[True, False])
+        )
+        for team, tdf in grp.groupby("team"):
+            if team not in breakdown:
+                breakdown[team] = {}
+            breakdown[team][key] = [
+                {"player": r["player"], "hrs": int(r["hrs"])}
+                for _, r in tdf.iterrows()
+            ]
+    return breakdown
+
+
 def top_exit_velocity(hrs, top_n=10):
     """Top N HRs by exit velocity — batters only (excludes pitchers batting)."""
     # pitcher_1 is the pitching team pitcher; batter != pitcher_1 ensures we have a position player
@@ -492,6 +513,24 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--muted);
     font-family: var(--mono);
   }
+
+  /* ── TEAM BREAKDOWN PANEL ── */
+  .breakdown-panel { display:none; background:var(--navy3); border:1px solid var(--border); border-radius:10px; padding:1.25rem 1.5rem; margin-top:1rem; }
+  .breakdown-panel.open { display:block; }
+  .breakdown-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+  .breakdown-title { font-family:'Oswald',sans-serif; font-size:1rem; font-weight:500; color:#fff; letter-spacing:0.5px; }
+  .breakdown-close { font-family:var(--mono); font-size:10px; letter-spacing:1px; padding:3px 10px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; }
+  .breakdown-close:hover { border-color:var(--red); color:var(--red); }
+  .breakdown-toggle { display:flex; gap:6px; margin-bottom:1rem; }
+  .breakdown-row { display:flex; align-items:center; gap:10px; font-size:13px; margin-bottom:5px; }
+  .breakdown-name { min-width:160px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .breakdown-bar-bg { flex:1; height:8px; background:var(--navy2); border-radius:4px; overflow:hidden; }
+  .breakdown-bar-fill { height:100%; border-radius:4px; background:var(--red); }
+  .breakdown-bar-fill.blue { background:#2C7BE5; }
+  .breakdown-num { font-family:var(--mono); font-size:12px; min-width:24px; text-align:right; color:#fff; }
+  tbody tr.clickable { cursor:pointer; }
+  tbody tr.clickable:hover td:first-child { color:var(--gold); }
+  tbody tr.active-team td:first-child { color:var(--gold); }
   /* ── SPRAY TOOLTIP ── */
   .spray-tooltip {
     position: fixed;
@@ -620,6 +659,21 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- TEAM BREAKDOWN PANEL -->
+  <div class="breakdown-panel" id="breakdown-panel">
+    <div class="breakdown-header">
+      <div class="breakdown-title" id="breakdown-title">Team Breakdown</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="breakdown-toggle">
+          <button id="bd-btn-week"   onclick="setBreakdownMode('week')"   style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">Last 7 Days</button>
+          <button id="bd-btn-season" onclick="setBreakdownMode('season')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Season</button>
+        </div>
+        <button class="breakdown-close" onclick="closeBreakdown()">Close ✕</button>
+      </div>
+    </div>
+    <div class="breakdown-rows" id="breakdown-rows"></div>
+  </div>
+
   <!-- PLAYER LEADERBOARD -->
   <div class="section">
     <div class="section-header">
@@ -722,6 +776,9 @@ function sortTeams(by) {
     const pctW = maxWeek   ? Math.round((row.hr_week   / maxWeek)   * 100) : 0;
     const pctS = maxSeason ? Math.round((row.hr_season / maxSeason) * 100) : 0;
     const tr = document.createElement('tr');
+    tr.className = 'clickable';
+    tr.title = 'Click to see player breakdown';
+    tr.onclick = () => openBreakdown(row.team, tr);
     tr.innerHTML = `
       <td style="font-weight:500">${row.team}</td>
       <td>
@@ -743,6 +800,75 @@ function sortTeams(by) {
   document.getElementById('sort-season').style.cssText = by === 'season' ? 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;' : 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;';
 }
 sortTeams('week');
+
+/* ── TEAM BREAKDOWN ── */
+let activeTeam = null;
+let breakdownMode = 'week';
+
+const BD_ON  = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--red);background:var(--red);color:#fff;cursor:pointer;';
+const BD_OFF = 'font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;';
+
+function openBreakdown(team, clickedRow) {
+  // Deactivate previous row
+  document.querySelectorAll('tbody tr.active-team').forEach(r => r.classList.remove('active-team'));
+  if (activeTeam === team) {
+    closeBreakdown();
+    return;
+  }
+  activeTeam = team;
+  clickedRow.classList.add('active-team');
+  document.getElementById('breakdown-title').textContent = team + ' — Home Run Contributors';
+
+  // Insert panel after the team table section
+  const panel = document.getElementById('breakdown-panel');
+  const tableSection = document.querySelector('#team-tbody').closest('.section');
+  tableSection.after(panel);
+  panel.classList.add('open');
+
+  renderBreakdown();
+}
+
+function closeBreakdown() {
+  activeTeam = null;
+  document.querySelectorAll('tbody tr.active-team').forEach(r => r.classList.remove('active-team'));
+  document.getElementById('breakdown-panel').classList.remove('open');
+}
+
+function setBreakdownMode(mode) {
+  breakdownMode = mode;
+  document.getElementById('bd-btn-week').style.cssText   = mode === 'week'   ? BD_ON : BD_OFF;
+  document.getElementById('bd-btn-season').style.cssText = mode === 'season' ? BD_ON : BD_OFF;
+  renderBreakdown();
+}
+
+function renderBreakdown() {
+  const container = document.getElementById('breakdown-rows');
+  container.innerHTML = '';
+  if (!activeTeam || !DATA.team_breakdown[activeTeam]) return;
+
+  const players = DATA.team_breakdown[activeTeam][breakdownMode] || [];
+  if (!players.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;">No data for this window.</div>';
+    return;
+  }
+
+  const max = Math.max(...players.map(p => p.hrs));
+  const isBlue = breakdownMode === 'season';
+
+  players.forEach(p => {
+    const pct = max ? Math.round((p.hrs / max) * 100) : 0;
+    const row = document.createElement('div');
+    row.className = 'breakdown-row';
+    row.innerHTML = `
+      <div class="breakdown-name">${p.player}</div>
+      <div class="breakdown-bar-bg">
+        <div class="breakdown-bar-fill${isBlue ? ' blue' : ''}" style="width:${pct}%"></div>
+      </div>
+      <div class="breakdown-num">${p.hrs}</div>
+    `;
+    container.appendChild(row);
+  });
+}
 
 /* ── PLAYER TABLE ── */
 (function() {
@@ -1105,6 +1231,9 @@ def main():
     # Season player leaderboard
     pl_season = player_leaderboard(hrs_szn, top_n=10)
 
+    print("  Building team HR breakdowns …")
+    team_breakdown = team_hr_breakdown(hrs, hrs_szn)
+
     data_payload = {
         "team_combined":      df_to_list(tc),
         "player_leaders":     df_to_list(pl),
@@ -1113,6 +1242,7 @@ def main():
         "top_ev_season":      df_to_list(ev_season),
         "top_dist_week":      df_to_list(dist_week),
         "top_dist_season":    df_to_list(dist_season),
+        "team_breakdown":     team_breakdown,
     }
 
     html = (HTML_TEMPLATE
