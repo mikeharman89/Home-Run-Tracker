@@ -76,7 +76,7 @@ def fetch_home_runs(start, end):
             missing_ids = hrs.loc[missing_mask, "batter"].dropna().unique().tolist()
             if missing_ids:
                 lookup = playerid_reverse_lookup(missing_ids, key_type="mlbam")
-                lookup["full_name"] = lookup["name_first"] + " " + lookup["name_last"]
+                lookup["full_name"] = (lookup["name_first"] + " " + lookup["name_last"]).str.title()
                 id_to_name = dict(zip(lookup["key_mlbam"], lookup["full_name"]))
                 hrs.loc[missing_mask, "batter_name"] = hrs.loc[missing_mask, "batter"].map(id_to_name)
         except Exception as e:
@@ -88,6 +88,8 @@ def fetch_home_runs(start, end):
         lambda x: f"Player {x}"
     )
 
+    # Normalize all batter names to title case
+    hrs["batter_name"] = hrs["batter_name"].fillna("").str.title()
     hrs["batting_team"] = hrs.apply(
         lambda r: r["home_team"] if r["inning_topbot"] == "Bot" else r["away_team"], axis=1
     )
@@ -1247,7 +1249,7 @@ def main():
             missing_ids = hrs_szn.loc[missing_szn, "batter"].dropna().unique().tolist()
             if missing_ids:
                 lookup = playerid_reverse_lookup(missing_ids, key_type="mlbam")
-                lookup["full_name"] = lookup["name_first"] + " " + lookup["name_last"]
+                lookup["full_name"] = (lookup["name_first"] + " " + lookup["name_last"]).str.title()
                 id_to_name = dict(zip(lookup["key_mlbam"], lookup["full_name"]))
                 hrs_szn.loc[missing_szn, "batter_name"] = hrs_szn.loc[missing_szn, "batter"].map(id_to_name)
         except Exception as e:
@@ -1257,8 +1259,7 @@ def main():
     hrs_szn.loc[still_missing_szn, "batter_name"] = hrs_szn.loc[still_missing_szn, "batter"].astype(str).apply(
         lambda x: f"Player {x}"
     )
-
-    ev_season   = top_exit_velocity(hrs_szn, top_n=10)
+    hrs_szn["batter_name"] = hrs_szn["batter_name"].fillna("").str.title()
     dist_season = top_distance(hrs_szn, top_n=10)
 
     top_ev_val   = round(ev_week["exit_velo"].iloc[0], 1)  if not ev_week.empty   else "—"
