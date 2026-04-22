@@ -1104,7 +1104,7 @@ function drawSpray(rows) {
   rows.forEach((row, i) => {
     const hcx = +row.hc_x;
     const hcy = +row.hc_y;
-    if (!hcx || !hcy || isNaN(hcx) || isNaN(hcy)) return;
+    if (isNaN(hcx) || isNaN(hcy) || hcx === null || hcy === null || hcx === 0 && hcy === 0) return;
 
     const [lx, ly] = toCanvas(hcx, hcy);
 
