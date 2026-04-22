@@ -1260,6 +1260,7 @@ def main():
         lambda x: f"Player {x}"
     )
     hrs_szn["batter_name"] = hrs_szn["batter_name"].fillna("").str.title()
+    ev_season   = top_exit_velocity(hrs_szn, top_n=10)
     dist_season = top_distance(hrs_szn, top_n=10)
 
     top_ev_val   = round(ev_week["exit_velo"].iloc[0], 1)  if not ev_week.empty   else "—"
