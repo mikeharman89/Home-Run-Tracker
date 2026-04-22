@@ -776,7 +776,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 </div>
 
-<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; {{WEEK_LABEL}} &nbsp;·&nbsp; Created by Mike Harman</footer>
+<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; {{WEEK_LABEL}}</footer>
 
 <script>
 const DATA = {{DATA_JSON}};
@@ -1233,12 +1233,30 @@ def main():
     hrs_szn["batting_team"] = hrs_szn.apply(
         lambda r: r["home_team"] if r["inning_topbot"] == "Bot" else r["away_team"], axis=1
     )
-    if "batter_name" in hrs_szn.columns:
-        pass
-    elif "des" in hrs_szn.columns:
-        hrs_szn["batter_name"] = hrs_szn["des"].str.extract(r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))")[0].str.strip()
+    if "des" in hrs_szn.columns:
+        hrs_szn["batter_name"] = hrs_szn["des"].str.extract(
+            r"^([A-Za-z\s'\-\.]+?)(?:\s+(?:homers|hits))"
+        )[0].str.strip()
     else:
-        hrs_szn["batter_name"] = hrs_szn["player_name"]
+        hrs_szn["batter_name"] = None
+
+    missing_szn = hrs_szn["batter_name"].isna() | (hrs_szn["batter_name"] == "")
+    if missing_szn.any() and "batter" in hrs_szn.columns:
+        try:
+            from pybaseball import playerid_reverse_lookup
+            missing_ids = hrs_szn.loc[missing_szn, "batter"].dropna().unique().tolist()
+            if missing_ids:
+                lookup = playerid_reverse_lookup(missing_ids, key_type="mlbam")
+                lookup["full_name"] = lookup["name_first"] + " " + lookup["name_last"]
+                id_to_name = dict(zip(lookup["key_mlbam"], lookup["full_name"]))
+                hrs_szn.loc[missing_szn, "batter_name"] = hrs_szn.loc[missing_szn, "batter"].map(id_to_name)
+        except Exception as e:
+            print(f"  Warning: playerid_reverse_lookup failed ({e}), using fallback")
+
+    still_missing_szn = hrs_szn["batter_name"].isna() | (hrs_szn["batter_name"] == "")
+    hrs_szn.loc[still_missing_szn, "batter_name"] = hrs_szn.loc[still_missing_szn, "batter"].astype(str).apply(
+        lambda x: f"Player {x}"
+    )
 
     ev_season   = top_exit_velocity(hrs_szn, top_n=10)
     dist_season = top_distance(hrs_szn, top_n=10)
