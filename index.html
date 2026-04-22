@@ -397,7 +397,7 @@
 <div class="hero">
   <div class="hero-inner">
     <h1 class="hero-title">Home Run <span>Tracker</span></h1>
-    <div class="hero-meta">Generated Apr 22, 2026 3:34 PM MDT</div>
+    <div class="hero-meta">Generated Apr 22, 2026 3:39 PM MDT</div>
     <div class="stats-row">
       <div class="stat-pill">
         <div class="stat-pill-label">HRs Last 7 Days</div>
@@ -871,7 +871,7 @@ function drawSpray(rows) {
   rows.forEach((row, i) => {
     const hcx = +row.hc_x;
     const hcy = +row.hc_y;
-    if (!hcx || !hcy || isNaN(hcx) || isNaN(hcy)) return;
+    if (isNaN(hcx) || isNaN(hcy) || hcx === null || hcy === null || hcx === 0 && hcy === 0) return;
 
     const [lx, ly] = toCanvas(hcx, hcy);
 
