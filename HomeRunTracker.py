@@ -776,7 +776,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 </div>
 
-<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; {{WEEK_LABEL}}</footer>
+<footer>Data via pybaseball / MLB Statcast &nbsp;·&nbsp; {{WEEK_LABEL}} &nbsp;·&nbsp; Created by Mike Harman</footer>
 
 <script>
 const DATA = {{DATA_JSON}};
