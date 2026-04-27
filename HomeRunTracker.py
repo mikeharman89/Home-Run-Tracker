@@ -641,11 +641,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div class="stat-pill-val">{{TOTAL_SEASON}}</div>
       </div>
       <div class="stat-pill">
-        <div class="stat-pill-label">Top Exit Velo</div>
+        <div class="stat-pill-label">Top Exit Velo (Season)</div>
         <div class="stat-pill-val gold">{{TOP_EV}} mph</div>
       </div>
       <div class="stat-pill">
-        <div class="stat-pill-label">Longest HR</div>
+        <div class="stat-pill-label">Longest HR (Season)</div>
         <div class="stat-pill-val gold">{{TOP_DIST}} ft</div>
       </div>
     </div>
@@ -1263,8 +1263,8 @@ def main():
     ev_season   = top_exit_velocity(hrs_szn, top_n=10)
     dist_season = top_distance(hrs_szn, top_n=10)
 
-    top_ev_val   = round(ev_week["exit_velo"].iloc[0], 1)  if not ev_week.empty   else "—"
-    top_dist_val = int(dist_week["distance"].iloc[0])       if not dist_week.empty else "—"
+    top_ev_val   = round(ev_season["exit_velo"].iloc[0], 1)  if not ev_season.empty   else "—"
+    top_dist_val = int(dist_season["distance"].iloc[0])       if not dist_season.empty else "—"
 
     # Season player leaderboard
     pl_season = player_leaderboard(hrs_szn, top_n=10)
